@@ -114,6 +114,7 @@
   .session-header{ display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; }
   .session-title-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
   .session-routine-name{ font-weight:600; font-size:15px; }
+  .session-date-edit{ font-family:var(--font-mono); font-size:11.5px; color:var(--ink-dim); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:3px 6px; }
   .status-badge{ font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; padding:3px 9px; border-radius:999px; }
   .status-badge.finished{ background:var(--good-soft); color:var(--good); }
   .status-badge.progress{ background:var(--warn-soft); color:var(--warn); }
@@ -316,7 +317,7 @@
   .page[hidden]{ display:none; }
 
   /* ---- shared little-form grid used by measurements / meals / grocery / travel / beauty ---- */
-  .measure-form, .meal-form, .grocery-form, .travel-form, .beauty-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .measure-form, .meal-form, .grocery-form, .travel-form, .beauty-form, .past-workout-form{ display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
   .measure-form input, .meal-form input, .meal-form select, .grocery-form input, .grocery-form select, .travel-form input, .beauty-form input, .beauty-form select{
     font-family:var(--font-body); font-size:13px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; flex:1 1 110px; min-width:0;
   }
@@ -362,6 +363,10 @@
   .fin-item-row input{ font-family:var(--font-body); font-size:13px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:8px; padding:7px 9px; width:100%; }
   .fin-item-row.is-2col{ grid-template-columns:1.4fr 1fr auto; }
   @media (max-width:640px){ .fin-item-row, .fin-item-row.is-2col{ grid-template-columns:1fr 1fr; } }
+  .fin-goal-card{ margin-bottom:16px; padding-bottom:14px; border-bottom:1px solid var(--line); }
+  .fin-goal-card:last-child{ border-bottom:none; margin-bottom:6px; padding-bottom:0; }
+  .fin-goal-card .travel-savings-track{ margin-top:6px; }
+  .fin-goal-caption{ font-size:11.5px; color:var(--ink-dim); margin-top:5px; }
   .fin-summary-line{ display:flex; justify-content:space-between; padding:6px 0; border-bottom:1px solid var(--line); font-size:14px; }
   .fin-summary-line .num{ font-weight:600; }
   .fin-summary-line.is-total{ font-weight:700; color:var(--accent); border-bottom:none; padding-top:10px; }
@@ -421,7 +426,7 @@
   .travel-edit-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:6px; }
   .travel-edit-field{ display:flex; flex-direction:column; gap:3px; }
   .travel-edit-field span{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-dim); }
-  .travel-edit-field input{ font-family:var(--font-body); font-size:12.5px; padding:6px 7px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); }
+  .travel-edit-field input, .travel-edit-field select{ font-family:var(--font-body); font-size:12.5px; padding:6px 7px; border:1px solid var(--line); border-radius:6px; background:var(--surface); color:var(--ink); }
   .travel-card-actions button:hover{ border-color:var(--accent); color:var(--accent); }
 
   .beauty-picker{ display:flex; gap:8px; margin-bottom:14px; }
@@ -449,7 +454,15 @@
   .beauty-form-stars .beauty-star{ font-size:19px; }
   .bookcase-shelf{ display:flex; flex-wrap:wrap; align-items:flex-end; gap:12px; padding:0 4px 14px; margin-bottom:24px; border-bottom:9px solid #8a5a3c; border-radius:3px; box-shadow:0 5px 7px -3px rgba(40,20,10,.28); }
   .bookcase-shelf:last-child{ margin-bottom:6px; }
-  .book-cover{ width:92px; height:134px; border-radius:3px 8px 8px 3px; padding:10px 8px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; box-shadow:inset 6px 0 0 rgba(0,0,0,.16), 0 3px 6px rgba(40,20,10,.22); flex-shrink:0; }
+  .book-cover{ width:92px; height:134px; border-radius:3px 8px 8px 3px; padding:10px 8px; display:flex; flex-direction:column; align-items:center; justify-content:space-between; box-shadow:inset 6px 0 0 rgba(0,0,0,.16), 0 3px 6px rgba(40,20,10,.22); flex-shrink:0; position:relative; overflow:hidden; }
+  .book-cover.has-image{ padding:0; }
+  .book-cover.has-image img{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  .book-cover.has-image .book-cover-title{ display:none; }
+  .book-cover.has-image .book-cover-stars{ position:absolute; bottom:0; left:0; right:0; justify-content:center; gap:1px; background:rgba(0,0,0,.45); padding:4px 0; }
+  .book-cover.has-image.cover-broken{ padding:10px 8px; }
+  .book-cover.has-image.cover-broken img{ display:none; }
+  .book-cover.has-image.cover-broken .book-cover-title{ display:block; position:static; }
+  .book-cover.has-image.cover-broken .book-cover-stars{ position:static; background:none; padding:0; }
   .book-cover-title{ font-family:var(--font-display); font-style:italic; font-weight:600; font-size:12.5px; line-height:1.25; color:#fff; text-align:center; text-shadow:0 1px 2px rgba(0,0,0,.25); word-break:break-word; }
   .book-cover-stars{ display:flex; gap:1px; }
   .book-cover-star{ font-size:9px; color:rgba(255,255,255,.35); }
@@ -588,38 +601,46 @@
         <div id="today-body"></div>
       </section>
 
-      <section class="panel measure-panel" aria-labelledby="measure-heading">
-        <div class="panel-head-row">
-          <h2 id="measure-heading">Body Measurements</h2>
-          <select class="unit-toggle" id="measure-metric-select" data-input="measure-metric" style="cursor:pointer;"></select>
-        </div>
-        <form id="measure-form" class="measure-form">
-          <input type="date" id="measure-date" data-mfield="date">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Weight" id="measure-weight" data-mfield="weight">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Waist" id="measure-waist" data-mfield="waist">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Hips" id="measure-hips" data-mfield="hips">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Chest" id="measure-chest" data-mfield="chest">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Arms" id="measure-arms" data-mfield="arms">
-          <input type="number" step="0.1" inputmode="decimal" placeholder="Thighs" id="measure-thighs" data-mfield="thighs">
-          <button type="submit" class="finish-btn" style="padding:10px 16px;">+ Log</button>
-        </form>
-        <canvas class="progress-canvas" id="measure-chart" style="height:110px;"></canvas>
-        <div id="measure-list" class="measure-list"></div>
-      </section>
-
-      <section class="panel routines-panel">
-        <details class="routines-details" id="routines-details">
-          <summary>Routines &amp; exercises — edit your plan</summary>
-          <div class="routines-body">
-            <button type="button" class="ghost-btn" data-action="new-routine">+ New routine</button>
-            <div id="routines-list"></div>
+      <div class="content-grid">
+        <section class="panel measure-panel" aria-labelledby="measure-heading">
+          <div class="panel-head-row">
+            <h2 id="measure-heading">Body Measurements</h2>
+            <select class="unit-toggle" id="measure-metric-select" data-input="measure-metric" style="cursor:pointer;"></select>
           </div>
-        </details>
-      </section>
+          <form id="measure-form" class="measure-form">
+            <input type="date" id="measure-date" data-mfield="date">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Weight" id="measure-weight" data-mfield="weight">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Waist" id="measure-waist" data-mfield="waist">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Hips" id="measure-hips" data-mfield="hips">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Chest" id="measure-chest" data-mfield="chest">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Arms" id="measure-arms" data-mfield="arms">
+            <input type="number" step="0.1" inputmode="decimal" placeholder="Thighs" id="measure-thighs" data-mfield="thighs">
+            <button type="submit" class="finish-btn" style="padding:10px 16px;">+ Log</button>
+          </form>
+          <canvas class="progress-canvas" id="measure-chart" style="height:110px;"></canvas>
+          <div id="measure-list" class="measure-list"></div>
+        </section>
+
+        <section class="panel routines-panel">
+          <details class="routines-details" id="routines-details">
+            <summary>Routines &amp; exercises — edit your plan</summary>
+            <div class="routines-body">
+              <button type="button" class="ghost-btn" data-action="new-routine">+ New routine</button>
+              <div id="routines-list"></div>
+            </div>
+          </details>
+        </section>
+      </div>
 
       <div class="content-grid">
         <section class="panel history-panel" aria-labelledby="history-heading">
           <h2 id="history-heading" style="margin-bottom:14px;">Ledger</h2>
+          <form id="past-workout-form" class="past-workout-form">
+            <input type="date" id="past-workout-date" aria-label="Date" required>
+            <select id="past-workout-routine" aria-label="Routine" required></select>
+            <button type="submit" class="ghost-btn">+ Log a past workout</button>
+          </form>
+          <p class="goals-footnote" style="margin:2px 0 12px;">Missed logging a day? Add it here with the real date — every field below is editable after, and you can drag the date on any entry to refile it.</p>
           <div id="history-list" class="history-list"></div>
         </section>
 
@@ -647,24 +668,26 @@
         <p class="goals-footnote" id="mealplan-footnote"></p>
       </section>
 
-      <section class="panel" id="pantry-panel">
-        <div class="panel-head-row">
-          <h2>What's In Your Fridge 🧊</h2>
-          <span class="goals-week-range" id="pantry-count"></span>
-        </div>
-        <p class="goals-footnote" style="margin:0 0 10px;">Add what you've already got on hand (with an amount if you want to track it) — the weekly plan will favor meals that use it, it won't get re-added to your grocery list, and it'll clear off the grocery list automatically if it's already there.</p>
-        <form id="pantry-form" class="grocery-form">
-          <input type="text" id="pantry-item" placeholder="e.g. chicken breast" maxlength="60">
-          <input type="text" id="pantry-amount" placeholder="Amount (e.g. 2 lb)" maxlength="30" style="flex:0 0 140px;">
-          <button type="submit" class="ghost-btn">+ Add</button>
-        </form>
-        <div id="pantry-list"></div>
-      </section>
+      <div class="content-grid">
+        <section class="panel" id="pantry-panel">
+          <div class="panel-head-row">
+            <h2>What's In Your Fridge 🧊</h2>
+            <span class="goals-week-range" id="pantry-count"></span>
+          </div>
+          <p class="goals-footnote" style="margin:0 0 10px;">Add what you've already got on hand (with an amount if you want to track it) — the weekly plan will favor meals that use it, it won't get re-added to your grocery list, and it'll clear off the grocery list automatically if it's already there.</p>
+          <form id="pantry-form" class="grocery-form">
+            <input type="text" id="pantry-item" placeholder="e.g. chicken breast" maxlength="60">
+            <input type="text" id="pantry-amount" placeholder="Amount (e.g. 2 lb)" maxlength="30" style="flex:0 0 140px;">
+            <button type="submit" class="ghost-btn">+ Add</button>
+          </form>
+          <div id="pantry-list"></div>
+        </section>
 
-      <section class="panel">
-        <h2 style="margin-bottom:10px;">Gentle-on-the-stomach reminders</h2>
-        <p class="goals-footnote" style="margin:0;">You've noted gastritis and not liking spicy food, so meals here default to a bland-diet mindset: smaller/more frequent meals, low-acid and low-fat choices, and skipping caffeine, alcohol, citrus, tomato-heavy sauces, and spicy seasoning. This is general, commonly-known gastritis guidance, not medical advice — please keep following your doctor's or dietitian's specific plan.</p>
-      </section>
+        <section class="panel">
+          <h2 style="margin-bottom:10px;">Gentle-on-the-stomach reminders</h2>
+          <p class="goals-footnote" style="margin:0;">You've noted gastritis and not liking spicy food, so meals here default to a bland-diet mindset: smaller/more frequent meals, low-acid and low-fat choices, and skipping caffeine, alcohol, citrus, tomato-heavy sauces, and spicy seasoning. This is general, commonly-known gastritis guidance, not medical advice — please keep following your doctor's or dietitian's specific plan.</p>
+        </section>
+      </div>
 
       <section class="panel">
         <div class="panel-head-row">
@@ -707,6 +730,7 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <p class="goals-footnote" style="margin-top:10px;">Checks in every two weeks (around each payday) against your Copilot Money budget to flag whether you're on track — this is a budget comparison, not a review of actual transactions, since Copilot can't see your checking/debit activity yet (the Plaid gap above). Not financial advice.</p>
       </section>
 
+      <div class="content-grid">
       <section class="panel">
         <h2 style="margin-bottom:14px;">Income &amp; Debts</h2>
         <div class="fin-row">
@@ -724,17 +748,16 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
       </section>
 
       <section class="panel">
-        <h2 style="margin-bottom:14px;">Upcoming Trips &amp; Savings Goal</h2>
-        <div class="fin-row">
-          <label class="fin-label">Savings goal</label>
-          <input type="number" min="0" step="50" id="fin-savings-goal" class="fin-input" data-fin="savings-goal">
-        </div>
-        <div class="fin-row">
-          <label class="fin-label">Goal deadline</label>
-          <input type="date" id="fin-savings-goal-date" class="fin-input" data-fin="savings-goal-date">
-        </div>
+        <h2 style="margin-bottom:14px;">Upcoming Trips</h2>
         <div id="fin-trips-list"></div>
         <button type="button" class="ghost-btn" data-action="fin-add-trip">+ Add trip</button>
+      </section>
+
+      <section class="panel">
+        <h2 style="margin-bottom:4px;">🐷 Savings Goals</h2>
+        <p class="goals-footnote" style="margin:0 0 14px;">Name a goal, give it a deadline and a target, and link a Travel wishlist/planned trip to it to show the same progress bar in both places.</p>
+        <div id="fin-savings-goals-list"></div>
+        <button type="button" class="ghost-btn" data-action="fin-add-savings-goal">+ Add goal</button>
       </section>
 
       <section class="panel">
@@ -760,6 +783,7 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <div id="fin-debt-plan"></div>
         <p class="goals-footnote" style="margin-top:10px;">A simple avalanche-method projection built from your own numbers above — not financial advice. Add balances/APRs to every debt and fill in income + all expenses for the most accurate schedule.</p>
       </section>
+      </div>
     </div>
 
     <div class="page" data-page="travel" id="page-travel">
@@ -870,13 +894,7 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <div id="bookcase"></div>
       </section>
 
-      <section class="panel">
-        <div class="panel-head-row"><h2 style="font-size:16px;">📖 Reading Bingo</h2></div>
-        <p class="goals-footnote" style="margin:0 0 14px;">Tap a square once you've read a book that fits it. Get 5 in a row — across, down, or diagonal — for a BINGO.</p>
-        <div id="book-bingo" class="bingo-grid"></div>
-        <p id="book-bingo-status" class="bingo-status"></p>
-      </section>
-
+      <div class="content-grid">
       <section class="panel">
         <div class="panel-head-row"><h2 style="font-size:16px;">🔤 Alphabet Challenge — by Title</h2></div>
         <p class="goals-footnote" style="margin:0 0 14px;">Filled in automatically as you log books — one for every letter a book title starts with (ignoring "The/A/An").</p>
@@ -888,12 +906,22 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <p class="goals-footnote" style="margin:0 0 14px;">Filled in automatically from the authors you've logged.</p>
         <div id="alpha-author" class="alpha-grid"></div>
       </section>
+      </div>
+
+      <div class="content-grid">
+      <section class="panel">
+        <div class="panel-head-row"><h2 style="font-size:16px;">📖 Reading Bingo</h2></div>
+        <p class="goals-footnote" style="margin:0 0 14px;">Tap a square once you've read a book that fits it. Get 5 in a row — across, down, or diagonal — for a BINGO.</p>
+        <div id="book-bingo" class="bingo-grid"></div>
+        <p id="book-bingo-status" class="bingo-status"></p>
+      </section>
 
       <section class="panel">
         <div class="panel-head-row"><h2 style="font-size:16px;">🎭 Genre Breakdown</h2></div>
         <p class="goals-footnote" style="margin:0 0 14px;">How your reading splits across genres, from what you've logged.</p>
         <div id="genre-breakdown"></div>
       </section>
+      </div>
 
       <section class="panel">
         <div class="panel-head-row"><h2 style="font-size:16px;">🗺️ US Reading Map</h2></div>
@@ -9791,8 +9819,17 @@ Place this code in the empty space below. */
     if (!Array.isArray(state.grocery)) state.grocery = [];
     if (!Array.isArray(state.travel)) state.travel = [];
     state.travel.forEach(function (trv) {
-      if (typeof trv.savingsGoal !== 'number') trv.savingsGoal = null;
-      if (typeof trv.savingsSaved !== 'number') trv.savingsSaved = null;
+      if (trv.savingsGoalId === undefined) trv.savingsGoalId = null;
+      // migrate a trip-local goal from before Savings Goals existed as their own linkable list
+      if (typeof trv.savingsGoal === 'number') {
+        if (!state.finance) state.finance = {};
+        if (!Array.isArray(state.finance.savingsGoals)) state.finance.savingsGoals = [];
+        var migratedGoal = { id: uid('sg'), name: trv.place || 'Trip', target: trv.savingsGoal, deadline: null, saved: (typeof trv.savingsSaved === 'number') ? trv.savingsSaved : null };
+        state.finance.savingsGoals.push(migratedGoal);
+        trv.savingsGoalId = migratedGoal.id;
+      }
+      delete trv.savingsGoal;
+      delete trv.savingsSaved;
     });
     if (!Array.isArray(state.beautyProducts)) state.beautyProducts = [];
     if (!Array.isArray(state.books)) state.books = [];
@@ -9801,6 +9838,7 @@ Place this code in the empty space below. */
       if (bk.genre === undefined) bk.genre = '';
       if (bk.usState === undefined) bk.usState = '';
       if (bk.country === undefined) bk.country = '';
+      if (bk.coverId === undefined) bk.coverId = null;
       if (bk.monthRead === undefined) bk.monthRead = null;
       if (bk.synopsis === undefined) bk.synopsis = '';
     });
@@ -9820,8 +9858,18 @@ Place this code in the empty space below. */
     });
     if (!state.finance || typeof state.finance !== 'object') state.finance = {};
     if (typeof state.finance.income !== 'number') state.finance.income = null;
-    if (typeof state.finance.savingsGoal !== 'number') state.finance.savingsGoal = null;
-    if (!state.finance.savingsGoalDate) state.finance.savingsGoalDate = null;
+    if (!Array.isArray(state.finance.savingsGoals)) state.finance.savingsGoals = [];
+    if (typeof state.finance.savingsGoal === 'number') {
+      state.finance.savingsGoals.push({ id: uid('sg'), name: 'Savings Goal', target: state.finance.savingsGoal, deadline: state.finance.savingsGoalDate || null, saved: null });
+    }
+    delete state.finance.savingsGoal;
+    delete state.finance.savingsGoalDate;
+    state.finance.savingsGoals.forEach(function (g) {
+      if (g.name === undefined) g.name = '';
+      if (typeof g.target !== 'number') g.target = null;
+      if (!g.deadline) g.deadline = null;
+      if (typeof g.saved !== 'number') g.saved = null;
+    });
     if (!Array.isArray(state.finance.debts)) state.finance.debts = [];
     if (!Array.isArray(state.finance.expenses)) state.finance.expenses = [];
     if (!Array.isArray(state.finance.trips)) state.finance.trips = [];
@@ -10255,13 +10303,13 @@ Place this code in the empty space below. */
       return arr;
     }
 
-    function getOrSyncSession(routineId) {
+    function getOrSyncSession(routineId, dateIso) {
       var routine = getRoutine(routineId);
       if (!routine) return null;
-      var today = todayISO();
-      var session = state.sessions.find(function (s) { return s.date === today && s.routineId === routineId; });
+      var date = dateIso || todayISO();
+      var session = state.sessions.find(function (s) { return s.date === date && s.routineId === routineId; });
       if (!session) {
-        session = { id: uid('s'), date: today, routineId: routineId, routineName: routine.name, finished: false, exercises: [] };
+        session = { id: uid('s'), date: date, routineId: routineId, routineName: routine.name, finished: false, exercises: [] };
         state.sessions.push(session);
       }
       routine.exercises.forEach(function (ex) {
@@ -10398,6 +10446,7 @@ Place this code in the empty space below. */
       if (ctx === 'history') {
         header = '<div class="session-header"><div class="session-title-row">' +
           '<span class="session-routine-name">' + escapeHtml(session.routineName) + '</span>' +
+          '<input type="date" class="session-date-edit" data-input="session-date" data-session="' + session.id + '" value="' + attr(session.date) + '" aria-label="Change the date this workout is filed under">' +
           '<span class="status-badge ' + (session.finished ? 'finished' : 'progress') + '">' + (session.finished ? 'finished' : 'in progress') + '</span>' +
           '</div><button type="button" class="delete-session" data-action="delete-session" data-session="' + session.id + '">remove</button></div>';
       }
@@ -10599,7 +10648,15 @@ Place this code in the empty space below. */
       el.innerHTML = sessionBlockHTML(session, 'today');
     }
 
+    function renderPastWorkoutForm() {
+      var sel = document.getElementById('past-workout-routine');
+      var dateInput = document.getElementById('past-workout-date');
+      if (!sel || !dateInput) return;
+      sel.innerHTML = state.routines.map(function (r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('');
+      if (!dateInput.value) dateInput.value = isoDaysAgo(1);
+    }
     function renderHistory() {
+      renderPastWorkoutForm();
       var el = document.getElementById('history-list');
       // only log days where at least one exercise had at least one set/checkbox crossed off —
       // an empty/untouched session (routine opened but nothing checked off) doesn't show up in
@@ -10608,7 +10665,7 @@ Place this code in the empty space below. */
       // to be excluded unconditionally while "active" (today's scheduled routine), which meant a
       // same-day check-off wouldn't show in the Ledger until the next day. Now it shows right away,
       // same as any other day, and simply keeps updating live as more gets crossed off.
-      var rest = state.sessions.filter(function (s) { return s.exercises.some(hasAnyProgress); });
+      var rest = state.sessions.filter(function (s) { return s.manualEntry || s.exercises.some(hasAnyProgress); });
       if (!rest.length) {
         el.innerHTML = '<p class="empty-note">Nothing crossed off yet — logged workouts will show up here once you check off an exercise.</p>';
         return;
@@ -11079,8 +11136,6 @@ Place this code in the empty space below. */
     function renderFinance() {
       var f = state.finance;
       document.getElementById('fin-income').value = f.income === null ? '' : f.income;
-      document.getElementById('fin-savings-goal').value = f.savingsGoal === null ? '' : f.savingsGoal;
-      document.getElementById('fin-savings-goal-date').value = f.savingsGoalDate || '';
 
       document.getElementById('fin-debts-list').innerHTML = f.debts.length ? f.debts.map(function (d) {
         return '<div class="fin-item-row">' +
@@ -11105,8 +11160,37 @@ Place this code in the empty space below. */
           '<button type="button" class="grocery-remove" data-action="fin-remove-trip" data-id="' + t.id + '" aria-label="Remove">×</button></div>';
       }).join('') : '<p class="empty-note">Add upcoming trips to plan around them.</p>';
 
+      renderSavingsGoals();
       renderFinanceSummary();
       renderBudgetCheck();
+    }
+    function tripsLinkedToGoal(goalId) {
+      return state.travel.filter(function (trv) { return trv.savingsGoalId === goalId; });
+    }
+    function renderSavingsGoals() {
+      var el = document.getElementById('fin-savings-goals-list');
+      if (!el) return;
+      var goals = state.finance.savingsGoals;
+      if (!goals.length) { el.innerHTML = '<p class="empty-note">No savings goals yet — add one below, then link a trip to it from the Travel page.</p>'; return; }
+      el.innerHTML = goals.map(function (g) {
+        var saved = g.saved || 0;
+        var pct = g.target ? Math.max(0, Math.min(100, Math.round((saved / g.target) * 100))) : 0;
+        var linkedTrips = tripsLinkedToGoal(g.id);
+        var captionParts = [];
+        if (linkedTrips.length) captionParts.push('linked to ' + linkedTrips.map(function (t) { return escapeHtml(t.place); }).join(', '));
+        if (g.deadline) captionParts.push('by ' + formatHeading(g.deadline));
+        return '<div class="fin-goal-card">' +
+          '<div class="fin-item-row">' +
+          '<input type="text" placeholder="Goal name" data-fin="goal-name" data-id="' + g.id + '" value="' + attr(g.name || '') + '">' +
+          '<input type="date" data-fin="goal-deadline" data-id="' + g.id + '" value="' + (g.deadline || '') + '">' +
+          '<input type="number" placeholder="Target $" data-fin="goal-target" data-id="' + g.id + '" value="' + (g.target == null ? '' : g.target) + '">' +
+          '<input type="number" placeholder="Saved so far $" data-fin="goal-saved" data-id="' + g.id + '" value="' + (g.saved == null ? '' : g.saved) + '">' +
+          '<button type="button" class="grocery-remove" data-action="fin-remove-savings-goal" data-id="' + g.id + '" aria-label="Remove">×</button>' +
+          '</div>' +
+          (g.target ? '<div class="travel-savings-track"><div class="travel-savings-fill" style="width:' + pct + '%;"></div></div>' : '') +
+          (captionParts.length ? '<div class="fin-goal-caption">' + captionParts.join(' · ') + '</div>' : '') +
+          '</div>';
+      }).join('');
     }
     /* ---- budget check-in: a biweekly Copilot-vs-budget comparison, refreshed by a scheduled
        task around each payday (see state.finance.budgetCheck). This is a budget comparison,
@@ -11156,21 +11240,8 @@ Place this code in the empty space below. */
           html += '<p class="goals-footnote" style="margin-top:8px;">There is no leftover after expenses and minimum payments in the numbers above — extra debt paydown would need to come from cutting an expense or increasing income.</p>';
         }
       }
-      if (f.savingsGoal) {
-        if (f.savingsGoalDate) {
-          var monthsUntil = monthsUntilDate(f.savingsGoalDate);
-          if (monthsUntil <= 0) {
-            html += '<p class="goals-footnote" style="margin-top:8px;">Your savings goal deadline (' + formatHeading(f.savingsGoalDate) + ') is this month or has already passed — worth setting a new target date above.</p>';
-          } else {
-            var neededPerMonth = f.savingsGoal / monthsUntil;
-            var onTrackForGoal = leftover >= neededPerMonth;
-            html += '<p class="goals-footnote" style="margin-top:8px;">To hit your $' + fmtNum(f.savingsGoal) + ' goal by ' + formatHeading(f.savingsGoalDate) + ' (' + monthsUntil + ' month' + (monthsUntil === 1 ? '' : 's') + ' away), you would need to save about $' + fmtNum(neededPerMonth) + '/mo. ' + (onTrackForGoal ? 'Your current $' + fmtNum(leftover) + '/mo leftover covers that, so you\'re on track if it all goes toward this goal.' : 'That\'s more than your current $' + fmtNum(Math.max(leftover, 0)) + '/mo leftover — at this rate you\'d be about $' + fmtNum(neededPerMonth - leftover) + '/mo short, so you\'d need to free up that much more each month or push the deadline out.') + '</p>';
-          }
-        } else if (leftover > 0) {
-          var monthsToGoal = Math.ceil(f.savingsGoal / leftover);
-          html += '<p class="goals-footnote" style="margin-top:8px;">At this leftover rate, your $' + fmtNum(f.savingsGoal) + ' savings goal is roughly ' + monthsToGoal + ' month' + (monthsToGoal === 1 ? '' : 's') + ' away if every bit of it went to savings — in practice you\'d likely want to split it between debt paydown, saving, and investing rather than putting it all in one place. Add a deadline above and I can tell you whether you\'re on pace for a specific date.</p>';
-        }
-      }
+      // Per-goal progress + deadline math now lives with each goal in the Savings Goals list
+      // (renderSavingsGoals) instead of one generic goal summarized here.
       document.getElementById('fin-summary').innerHTML = html || '<p class="empty-note">Add your income, expenses, and any debts above to see a plan here.</p>';
       renderVacationBudget();
       renderDebtPlan();
@@ -11438,20 +11509,22 @@ Place this code in the empty space below. */
       if (t.budget) metaPills.push('<span class="travel-meta-pill">💵 ' + escapeHtml(t.budget) + '</span>');
       var metaHTML = metaPills.length ? '<div class="travel-card-meta">' + metaPills.join('') + '</div>' : '';
       var highlightsHTML = t.highlights ? '<div class="travel-card-highlights">✨ ' + escapeHtml(t.highlights) + '</div>' : '';
+      var linkedGoal = t.savingsGoalId ? state.finance.savingsGoals.find(function (g) { return g.id === t.savingsGoalId; }) : null;
       var savingsHTML = '';
-      if (colId !== 'visited' && t.savingsGoal) {
-        var savedAmt = t.savingsSaved || 0;
-        var pct = Math.max(0, Math.min(100, Math.round((savedAmt / t.savingsGoal) * 100)));
+      if (linkedGoal && linkedGoal.target) {
+        var savedAmt = linkedGoal.saved || 0;
+        var pct = Math.max(0, Math.min(100, Math.round((savedAmt / linkedGoal.target) * 100)));
         savingsHTML = '<div class="travel-savings">' +
-          '<div class="travel-savings-row"><span>🐷 Savings goal</span><span class="num">$' + fmtNum(savedAmt) + ' / $' + fmtNum(t.savingsGoal) + '</span></div>' +
+          '<div class="travel-savings-row"><span>🐷 ' + escapeHtml(linkedGoal.name || 'Savings goal') + '</span><span class="num">$' + fmtNum(savedAmt) + ' / $' + fmtNum(linkedGoal.target) + '</span></div>' +
           '<div class="travel-savings-track"><div class="travel-savings-fill" style="width:' + pct + '%;"></div></div>' +
           '</div>';
       }
       var savingsEditHTML = colId !== 'visited'
-        ? '<div class="travel-edit-grid">' +
-          '<label class="travel-edit-field"><span>Savings goal</span><input type="number" min="0" step="1" placeholder="e.g. 2500" data-input="travel-savings-goal-edit" data-id="' + t.id + '" value="' + (t.savingsGoal === null ? '' : t.savingsGoal) + '"></label>' +
-          '<label class="travel-edit-field"><span>Saved so far</span><input type="number" min="0" step="1" placeholder="e.g. 400" data-input="travel-savings-saved-edit" data-id="' + t.id + '" value="' + (t.savingsSaved === null ? '' : t.savingsSaved) + '"></label>' +
-          '</div>'
+        ? '<label class="travel-edit-field" style="margin-bottom:6px;"><span>Savings goal</span><select data-input="travel-savings-link-edit" data-id="' + t.id + '">' +
+          '<option value="">— none —</option>' +
+          state.finance.savingsGoals.map(function (g) { return '<option value="' + g.id + '"' + (g.id === t.savingsGoalId ? ' selected' : '') + '>' + escapeHtml(g.name || 'Unnamed goal') + '</option>'; }).join('') +
+          '</select></label>' +
+          (state.finance.savingsGoals.length ? '' : '<p class="goals-footnote" style="margin:-2px 0 6px;">No savings goals yet — add one on the Financial page, then link it here.</p>')
         : '';
       var mainBlock = isEditing
         ? '<input type="text" class="travel-place-edit" placeholder="Place" maxlength="60" data-input="travel-place-edit" data-id="' + t.id + '" value="' + attr(t.place) + '">' +
@@ -11567,6 +11640,7 @@ Place this code in the empty space below. */
     }
     var bookFormRating = 0; // ephemeral UI state — star rating picked in the book-log add form before submit; not persisted
     var bookFormSynopsis = ''; // ephemeral UI state — synopsis picked from a BOOK_CATALOG suggestion; not persisted until Add is submitted, then saved onto the book itself
+    var bookFormCoverId = null; // ephemeral UI state — Open Library cover_i picked from a live search suggestion; not persisted until Add is submitted
     var BOOK_SPINE_COLORS = ['#c9714b', '#7a2333', '#3f7d52', '#a8660f', '#5b6f9e', '#8a5a8f', '#3a7a7d'];
     // Local, hand-curated fallback for the Book Log's "search a title, get author/genre/synopsis"
     // feature (genre + synopsis only exist here, not from Open Library's search API — see
@@ -11626,11 +11700,11 @@ Place this code in the empty space below. */
       return '';
     }
     function fetchOpenLibraryBooks(q, cb) {
-      var url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(q) + '&limit=6&fields=title,author_name,first_publish_year,subject';
+      var url = 'https://openlibrary.org/search.json?q=' + encodeURIComponent(q) + '&limit=6&fields=title,author_name,first_publish_year,subject,cover_i';
       fetch(url).then(function (r) { return r.ok ? r.json() : null; }).then(function (data) {
         var docs = (data && data.docs) || [];
         cb(docs.map(function (d) {
-          return { title: d.title || '', author: (d.author_name && d.author_name[0]) || '', genre: classifyGenreFromSubjects(d.subject), synopsis: '' };
+          return { title: d.title || '', author: (d.author_name && d.author_name[0]) || '', genre: classifyGenreFromSubjects(d.subject), synopsis: '', coverId: d.cover_i || null };
         }).filter(function (d) { return d.title; }));
       }).catch(function () { cb([]); });
     }
@@ -11677,6 +11751,7 @@ Place this code in the empty space below. */
       var genreSel = document.getElementById('book-genre');
       if (genreSel) genreSel.value = b.genre;
       bookFormSynopsis = b.synopsis || '';
+      bookFormCoverId = b.coverId || null;
       var el = document.getElementById('book-title-suggest');
       if (el) { el.hidden = true; el.innerHTML = ''; }
     }
@@ -11730,7 +11805,13 @@ Place this code in the empty space below. */
       var rating = Number(b.rating) || 0;
       var miniStars = '';
       for (var s = 1; s <= 5; s++) miniStars += '<span class="book-cover-star' + (s <= rating ? ' is-filled' : '') + '">★</span>';
-      return '<div class="book-cover" style="background:' + color + ';" title="' + attr(b.title) + '">' +
+      // Real cover art from Open Library's Covers API (covers.openlibrary.org) when a live-searched
+      // title had one (see coverId / fetchOpenLibraryBooks above). If the image 404s (cover_i can
+      // point to a missing image) or no coverId exists at all (BOOK_CATALOG-only match, or a title
+      // typed by hand), this falls back to the original colored-spine-with-title design.
+      var img = b.coverId ? '<img src="https://covers.openlibrary.org/b/id/' + b.coverId + '-M.jpg" alt="" loading="lazy" onerror="this.parentElement.classList.add(\'cover-broken\')">' : '';
+      return '<div class="book-cover' + (b.coverId ? ' has-image' : '') + '" style="background:' + color + ';" title="' + attr(b.title) + '">' +
+        img +
         '<span class="book-cover-title">' + escapeHtml(b.title) + '</span>' +
         '<span class="book-cover-stars">' + miniStars + '</span>' +
         '</div>';
@@ -12543,6 +12624,19 @@ Place this code in the empty space below. */
         var tidx = state.finance.trips.findIndex(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (tidx > -1) { state.finance.trips.splice(tidx, 1); renderFinance(); scheduleSave(); }
 
+      } else if (action === 'fin-add-savings-goal') {
+        state.finance.savingsGoals.push({ id: uid('sg'), name: '', target: null, deadline: null, saved: null });
+        renderFinance(); scheduleSave();
+
+      } else if (action === 'fin-remove-savings-goal') {
+        var gidx2 = state.finance.savingsGoals.findIndex(function (x) { return x.id === btn.getAttribute('data-id'); });
+        if (gidx2 > -1) {
+          var removedGoalId = state.finance.savingsGoals[gidx2].id;
+          state.finance.savingsGoals.splice(gidx2, 1);
+          state.travel.forEach(function (trv) { if (trv.savingsGoalId === removedGoalId) trv.savingsGoalId = null; });
+          renderFinance(); renderTravel(); scheduleSave();
+        }
+
       } else if (action === 'travel-status') {
         var trv = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (trv) { trv.status = btn.getAttribute('data-status'); renderTravel(); scheduleSave(); }
@@ -12624,7 +12718,11 @@ Place this code in the empty space below. */
       var kind = t.getAttribute('data-input');
       if (!kind && !t.getAttribute('data-fin') && t.id !== 'book-title' && t.id !== 'beauty-product-name') return;
 
-      if (kind === 'set-reps' || kind === 'set-weight') {
+      if (kind === 'session-date') {
+        var sessDate = findSession(t.getAttribute('data-session'));
+        if (sessDate && t.value) { sessDate.date = t.value; renderHistory(); renderStats(); scheduleSave(); }
+
+      } else if (kind === 'set-reps' || kind === 'set-weight') {
         var sess = findSession(t.getAttribute('data-session'));
         var ex = sess && findExInSession(sess, t.getAttribute('data-exercise'));
         var si = Number(t.getAttribute('data-set'));
@@ -12735,14 +12833,6 @@ Place this code in the empty space below. */
         var trvHighlights = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
         if (trvHighlights) { trvHighlights.highlights = t.value; scheduleSaveDebounced(); }
 
-      } else if (kind === 'travel-savings-goal-edit') {
-        var trvSavGoal = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
-        if (trvSavGoal) { trvSavGoal.savingsGoal = t.value === '' ? null : Number(t.value); scheduleSaveDebounced(); }
-
-      } else if (kind === 'travel-savings-saved-edit') {
-        var trvSavSaved = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
-        if (trvSavSaved) { trvSavSaved.savingsSaved = t.value === '' ? null : Number(t.value); scheduleSaveDebounced(); }
-
       } else if (kind === 'beauty-comment') {
         var bpNote = state.beautyProducts.find(function (x) { return x.id === t.getAttribute('data-id'); });
         if (bpNote) { bpNote.comment = t.value; scheduleSaveDebounced(); }
@@ -12758,6 +12848,7 @@ Place this code in the empty space below. */
 
       if (t.id === 'book-title') {
         bookFormSynopsis = ''; // typing manually (not picking a suggestion) means no curated synopsis applies
+        bookFormCoverId = null;
         renderBookTitleSuggest();
       } else if (t.id === 'beauty-product-name') {
         renderProductNameSuggest();
@@ -12767,11 +12858,9 @@ Place this code in the empty space below. */
       if (finField) {
         var f = state.finance;
         if (finField === 'income') { f.income = t.value === '' ? null : Number(t.value); scheduleSaveDebounced(); renderFinanceSummaryDebounced(); }
-        else if (finField === 'savings-goal') { f.savingsGoal = t.value === '' ? null : Number(t.value); scheduleSaveDebounced(); renderFinanceSummaryDebounced(); }
-        else if (finField === 'savings-goal-date') { f.savingsGoalDate = t.value || null; scheduleSaveDebounced(); renderFinanceSummaryDebounced(); }
         else {
           var fid = t.getAttribute('data-id');
-          var listKey = finField.indexOf('debt-') === 0 ? 'debts' : finField.indexOf('exp-') === 0 ? 'expenses' : 'trips';
+          var listKey = finField.indexOf('debt-') === 0 ? 'debts' : finField.indexOf('exp-') === 0 ? 'expenses' : finField.indexOf('goal-') === 0 ? 'savingsGoals' : 'trips';
           var item = f[listKey].find(function (x) { return x.id === fid; });
           if (item) {
             if (finField === 'debt-name') item.name = t.value;
@@ -12782,6 +12871,10 @@ Place this code in the empty space below. */
             else if (finField === 'exp-amount') item.amount = t.value === '' ? null : Number(t.value);
             else if (finField === 'trip-name') item.name = t.value;
             else if (finField === 'trip-cost') item.cost = t.value === '' ? null : Number(t.value);
+            else if (finField === 'goal-name') item.name = t.value;
+            else if (finField === 'goal-deadline') item.deadline = t.value || null;
+            else if (finField === 'goal-target') item.target = t.value === '' ? null : Number(t.value);
+            else if (finField === 'goal-saved') item.saved = t.value === '' ? null : Number(t.value);
             scheduleSaveDebounced();
             renderFinanceSummaryDebounced();
           }
@@ -12821,6 +12914,10 @@ Place this code in the empty space below. */
 
       } else if (t.id === 'beauty-weather' || t.id === 'beauty-occasion') {
         renderBeautyRecs();
+
+      } else if (t.getAttribute('data-input') === 'travel-savings-link-edit') {
+        var trvLink = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (trvLink) { trvLink.savingsGoalId = t.value || null; renderTravel(); scheduleSave(); }
       }
     });
 
@@ -12843,7 +12940,19 @@ Place this code in the empty space below. */
       var form = e.target;
       if (!form || !form.id) return;
 
-      if (form.id === 'measure-form') {
+      if (form.id === 'past-workout-form') {
+        e.preventDefault();
+        var pwDate = document.getElementById('past-workout-date').value;
+        var pwRoutineId = document.getElementById('past-workout-routine').value;
+        if (!pwDate || !pwRoutineId) return;
+        var pwSession = getOrSyncSession(pwRoutineId, pwDate);
+        if (pwSession) pwSession.manualEntry = true;
+        renderHistory();
+        renderStats();
+        scheduleSave();
+        showToast('Workout added — scroll down to log it.');
+
+      } else if (form.id === 'measure-form') {
         e.preventDefault();
         var dateEl = document.getElementById('measure-date');
         var entry = { id: uid('m'), date: dateEl.value || todayISO() };
@@ -12922,12 +13031,14 @@ Place this code in the empty space below. */
           country: document.getElementById('book-country').value,
           monthRead: bookMonthInput.value || null,
           synopsis: bookFormSynopsis,
+          coverId: bookFormCoverId,
           rating: bookFormRating,
           dateAdded: todayISO()
         });
         form.reset();
         bookFormRating = 0;
         bookFormSynopsis = '';
+        bookFormCoverId = null;
         var bookSuggestEl = document.getElementById('book-title-suggest');
         if (bookSuggestEl) { bookSuggestEl.hidden = true; bookSuggestEl.innerHTML = ''; }
         renderBooks();
