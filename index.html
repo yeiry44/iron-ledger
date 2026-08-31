@@ -102,8 +102,10 @@
   .ghost-btn:active{ transform:translateY(0); }
 
   /* ---- weekly schedule ---- */
-  .schedule-scroll{ overflow-x:auto; padding-bottom:2px; }
+  .schedule-scroll{ padding-bottom:2px; }
   .schedule-grid{ display:grid; grid-template-columns:repeat(7,minmax(96px,1fr)); gap:8px; min-width:680px; }
+  @media (max-width:700px){ .schedule-grid{ grid-template-columns:repeat(2,1fr); min-width:0; } }
+  @media (max-width:360px){ .schedule-grid{ grid-template-columns:1fr; } }
   .schedule-cell{ display:flex; flex-direction:column; gap:6px; border:1px solid var(--line); border-radius:12px; padding:9px 10px; background:var(--surface-2); }
   .schedule-cell.is-today{ border-color:var(--accent); background:var(--accent-soft); }
   .schedule-day{ font-family:var(--font-mono); font-size:11px; letter-spacing:1.5px; text-transform:uppercase; color:var(--ink-dim); }
@@ -191,9 +193,14 @@
   .routine-name-input:focus{ border-bottom-color:var(--accent); }
   .delete-routine{ background:none; border:none; color:var(--ink-dim); font-family:var(--font-mono); font-size:12px; cursor:pointer; }
   .delete-routine:hover{ color:var(--danger); }
-  .rx-rows-scroll{ overflow-x:auto; }
   .rx-row{ display:grid; grid-template-columns:auto 32px 1fr 100px 70px 70px auto; gap:7px; align-items:center; margin-bottom:6px; min-width:520px; }
   .rx-row input, .rx-row select{ font-family:var(--font-body); font-size:13px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:6px 7px; width:100%; }
+  @media (max-width:640px){
+    .rx-row{ display:flex; flex-wrap:wrap; min-width:0; }
+    .rx-row input[data-input="exercise-name"]{ flex:1 1 100%; width:auto; order:1; }
+    .rx-row select, .rx-row input:not([data-input="exercise-name"]){ flex:1 1 80px; width:auto; order:2; }
+    .rx-row .rx-remove{ order:3; }
+  }
   .rx-order{ display:flex; flex-direction:column; gap:1px; }
   .rx-order button{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:10px; line-height:1; padding:1px; }
   .rx-order button:hover{ color:var(--accent); }
@@ -280,6 +287,8 @@
   .goals-score-fill{ background:var(--accent); }
   .goals-score-fill.is-full{ background:var(--good); }
   .goals-scroll{ overflow-x:auto; padding-bottom:2px; }
+  .goals-mobile, .mealplan-mobile{ display:none; }
+  @media (max-width:640px){ .goals-scroll{ display:none; } .goals-mobile, .mealplan-mobile{ display:block; } }
   .goals-table{ border-collapse:collapse; width:100%; min-width:700px; }
   .goals-table th, .goals-table td{ padding:9px 6px; text-align:center; border-bottom:1px solid var(--line); }
   .goals-table tbody td, .goals-table tbody th.goal-label{ height:76px; vertical-align:middle; }
@@ -319,6 +328,12 @@
   .goal-note-input-sm{ width:64px; font-size:11px; padding:4px 3px; }
   .goal-progress-cell{ font-family:var(--font-mono); }
   .goal-progress{ font-size:12.5px; color:var(--ink-dim); font-weight:600; }
+  .goals-mobile-tabs{ display:flex; gap:5px; margin-bottom:12px; flex-wrap:wrap; }
+  .goals-mobile-tabs .weekday-pill.is-today{ box-shadow:0 0 0 1.5px var(--accent); }
+  .goals-mobile-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); }
+  .goals-mobile-row:last-child{ border-bottom:none; }
+  .goals-mobile-row-label{ display:flex; align-items:center; gap:10px; font-size:13.5px; font-weight:600; min-width:0; }
+  .goals-mobile-row-control.goal-cell{ width:auto; flex:0 0 auto; }
   .goal-progress.is-met{ color:var(--good); }
   .goal-note-readonly{ display:inline-flex; align-items:center; justify-content:center; width:64px; font-size:10.5px; line-height:1.25; padding:4px 3px; color:var(--ink-dim); font-style:italic; text-align:center; white-space:normal; overflow:visible; word-break:break-word; }
   .goals-footnote{ font-size:12px; color:var(--ink-dim); margin:14px 0 0; }
@@ -453,6 +468,7 @@
   .debt-schedule-table th:first-child, .debt-schedule-table td:first-child{ text-align:left; }
   .debt-schedule-table thead th{ font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); }
   .debt-schedule-table td.is-paid{ color:var(--good); font-weight:600; }
+  @media (max-width:640px){ .debt-schedule-table{ min-width:0; font-size:10.5px; } .debt-schedule-table th, .debt-schedule-table td{ padding:5px 4px; } .debt-schedule-table thead th{ font-size:8.5px; letter-spacing:.5px; } }
 
   .travel-board{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px; min-width:0; }
   @media (max-width:820px){ .travel-board{ grid-template-columns:1fr; } }
@@ -616,6 +632,15 @@
   .mealplan-kcal{ display:block; margin-top:4px; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim); }
   .mealplan-table td.mealplan-total{ font-weight:600; }
   .mealplan-table td.mealplan-total.is-in-range{ color:var(--good); }
+  .mealplan-mobile-day{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .mealplan-mobile-day-label{ display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-size:11px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); margin:0 0 6px; }
+  .mealplan-mobile-day-label .mealplan-total{ font-family:var(--font-mono); font-weight:600; color:var(--ink); }
+  .mealplan-mobile-day-label .mealplan-total.is-in-range{ color:var(--good); }
+  .mealplan-mobile-row{ display:flex; align-items:baseline; gap:8px; padding:4px 0; border-bottom:1px solid var(--line); }
+  .mealplan-mobile-row:last-child{ border-bottom:none; }
+  .mealplan-mobile-label{ flex:0 0 62px; font-size:11px; color:var(--ink-dim); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.5px; }
+  .mealplan-mobile-row .mealplan-food{ flex:1; font-size:12.5px; }
+  .mealplan-mobile-row .mealplan-kcal{ flex:0 0 auto; font-size:11px; color:var(--ink-dim); font-family:var(--font-mono); margin-top:0; }
   .daily-schedule{ display:grid; grid-template-columns:1fr 1fr; gap:16px; min-width:0; }
   @media (max-width:640px){ .daily-schedule{ grid-template-columns:1fr; } }
   .schedule-day-col{ min-width:0; }
@@ -691,6 +716,7 @@
         <div class="goals-scroll">
           <table class="goals-table" id="goals-table"></table>
         </div>
+        <div class="goals-mobile" id="goals-mobile"></div>
       </section>
     </div>
 
@@ -779,6 +805,7 @@
         <div class="goals-scroll">
           <table class="goals-table mealplan-table" id="mealplan-table"></table>
         </div>
+        <div class="mealplan-mobile" id="mealplan-mobile"></div>
         <p class="goals-footnote" id="mealplan-footnote"></p>
       </section>
 
@@ -10805,6 +10832,42 @@ Place this code in the empty space below. */
       "Be proud of how far you've come 🤍"
     ];
     function dayOfYear(d) { return Math.floor((d - new Date(d.getFullYear(), 0, 0)) / 86400000); }
+    // Builds the inner control (checkbox/bottles/note/number input) for one goal on one day —
+    // shared by the desktop table's <td> cells and the mobile day-at-a-time view so the two
+    // never drift out of sync. Returns the exact "goal-cell" modifier classes each original
+    // branch used, so desktop rendering is pixel-identical to before this was factored out.
+    function goalDayControl(g, i, arr, noteArr) {
+      if (g.type === 'numeric') {
+        var val = arr[i];
+        var hit = val !== null && val !== '' && Number(val) >= g.target;
+        return { done: hit, extraClass: ' goal-cell-num' + (hit ? ' is-hit' : ''),
+          html: '<input type="number" inputmode="numeric" min="0" step="500" class="goal-num-input" data-input="goal-steps" data-goal="' + g.id + '" data-day="' + i + '" value="' + (val === null || val === undefined ? '' : val) + '" placeholder="0">' };
+      } else if (g.bottles) {
+        var bottleCount = Number(arr[i]) || 0;
+        var bottleDone = bottleCount >= g.bottles;
+        var bottleBtns = '';
+        for (var b = 1; b <= g.bottles; b++) {
+          var filled = bottleCount >= b;
+          bottleBtns += '<button type="button" class="goal-check is-icon-check is-bottle' + (filled ? ' is-filled' : '') + '" data-action="toggle-water" data-goal="' + g.id + '" data-day="' + i + '" data-bottle="' + b + '" aria-label="' + attr(g.label) + ' bottle ' + b + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + filled + '">' + goalIconSVG(g.id) + '</button>';
+        }
+        return { done: bottleDone, extraClass: bottleDone ? ' is-done' : '', html: '<div class="goal-cell-bottles">' + bottleBtns + '</div>' };
+      } else {
+        var done = !!arr[i];
+        var isIconCheck = (g.id === 'book' || g.id === 'water');
+        var checkClass = 'goal-check' + (isIconCheck ? ' is-icon-check' : '');
+        var checkInner = isIconCheck ? goalIconSVG(g.id) : (done ? '✓' : '');
+        var btn = '<button type="button" class="' + checkClass + '" data-action="toggle-goal" data-goal="' + g.id + '" data-day="' + i + '" aria-label="' + attr(g.label) + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + done + '">' + checkInner + '</button>';
+        if (g.hasNote) {
+          var noteVal = (noteArr && noteArr[i]) || '';
+          var noteEl = g.noteReadOnly
+            ? '<span class="goal-note-readonly">' + (noteVal ? escapeHtml(noteVal) : '—') + '</span>'
+            : '<input type="text" class="goal-note-input goal-note-input-sm" data-input="goal-note" data-goal="' + g.id + '" data-day="' + i + '" value="' + attr(noteVal) + '" placeholder="' + attr(g.notePlaceholder || '—') + '">';
+          return { done: done, extraClass: done ? ' is-done' : '', html: '<div class="goal-cell-daily-note">' + btn + noteEl + '</div>' };
+        }
+        return { done: done, extraClass: done ? ' is-done' : '', html: btn };
+      }
+    }
+    var goalsMobileDay = null; // ephemeral UI state — which day the mobile day-at-a-time view shows, defaults to today
     function renderGoals() {
       var wk = goalWeekForView();
       var isCurrentWeek = wk.weekStart === currentWeekStart();
@@ -10837,45 +10900,9 @@ Place this code in the empty space below. */
             continue;
           }
           applicableCount++;
-          if (g.type === 'numeric') {
-            var val = arr[i];
-            var hit = val !== null && val !== '' && Number(val) >= g.target;
-            if (hit) doneCount++;
-            cells += '<td class="goal-cell goal-cell-num' + (hit ? ' is-hit' : '') + '">' +
-              '<input type="number" inputmode="numeric" min="0" step="500" class="goal-num-input" data-input="goal-steps" data-goal="' + g.id + '" data-day="' + i + '" value="' + (val === null || val === undefined ? '' : val) + '" placeholder="0">' +
-              '</td>';
-          } else if (g.bottles) {
-            var bottleCount = Number(arr[i]) || 0;
-            var bottleDone = bottleCount >= g.bottles;
-            if (bottleDone) doneCount++;
-            var bottleBtns = '';
-            for (var b = 1; b <= g.bottles; b++) {
-              var filled = bottleCount >= b;
-              bottleBtns += '<button type="button" class="goal-check is-icon-check is-bottle' + (filled ? ' is-filled' : '') + '" data-action="toggle-water" data-goal="' + g.id + '" data-day="' + i + '" data-bottle="' + b + '" aria-label="' + attr(g.label) + ' bottle ' + b + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + filled + '">' + goalIconSVG(g.id) + '</button>';
-            }
-            cells += '<td class="goal-cell' + (bottleDone ? ' is-done' : '') + (i === todayIdx ? ' is-today-col' : '') + '"><div class="goal-cell-bottles">' + bottleBtns + '</div></td>';
-          } else {
-            var done = !!arr[i];
-            if (done) doneCount++;
-            var isIconCheck = (g.id === 'book' || g.id === 'water');
-            var checkClass = 'goal-check' + (isIconCheck ? ' is-icon-check' : '');
-            var checkInner = isIconCheck ? goalIconSVG(g.id) : (done ? '✓' : '');
-            if (g.hasNote) {
-              var noteVal = (noteArr && noteArr[i]) || '';
-              var noteEl = g.noteReadOnly
-                ? '<span class="goal-note-readonly">' + (noteVal ? escapeHtml(noteVal) : '—') + '</span>'
-                : '<input type="text" class="goal-note-input goal-note-input-sm" data-input="goal-note" data-goal="' + g.id + '" data-day="' + i + '" value="' + attr(noteVal) + '" placeholder="' + attr(g.notePlaceholder || '—') + '">';
-              cells += '<td class="goal-cell' + (done ? ' is-done' : '') + (i === todayIdx ? ' is-today-col' : '') + '">' +
-                '<div class="goal-cell-daily-note">' +
-                '<button type="button" class="' + checkClass + '" data-action="toggle-goal" data-goal="' + g.id + '" data-day="' + i + '" aria-label="' + attr(g.label) + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + done + '">' + checkInner + '</button>' +
-                noteEl +
-                '</div></td>';
-            } else {
-              cells += '<td class="goal-cell' + (done ? ' is-done' : '') + (i === todayIdx ? ' is-today-col' : '') + '">' +
-                '<button type="button" class="' + checkClass + '" data-action="toggle-goal" data-goal="' + g.id + '" data-day="' + i + '" aria-label="' + attr(g.label) + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + done + '">' + checkInner + '</button>' +
-                '</td>';
-            }
-          }
+          var res = goalDayControl(g, i, arr, noteArr);
+          if (res.done) doneCount++;
+          cells += '<td class="goal-cell' + res.extraClass + (g.type !== 'numeric' && i === todayIdx ? ' is-today-col' : '') + '">' + res.html + '</td>';
         }
 
         var progressHTML;
@@ -10891,6 +10918,23 @@ Place this code in the empty space below. */
 
       document.getElementById('goals-table').innerHTML =
         '<thead><tr><th></th>' + headCells + '<th>Week</th></tr></thead><tbody>' + bodyRows + '</tbody>';
+
+      var mobileEl = document.getElementById('goals-mobile');
+      if (mobileEl) {
+        var selDay = goalsMobileDay !== null ? goalsMobileDay : (todayIdx > -1 ? todayIdx : 0);
+        var dayTabs = GOAL_DAY_LABELS.map(function (lbl, i) {
+          return '<button type="button" class="weekday-pill' + (i === selDay ? ' is-active' : '') + (i === todayIdx ? ' is-today' : '') + '" data-action="goals-mobile-day" data-day="' + i + '">' + lbl.charAt(0) + '</button>';
+        }).join('');
+        var dayRows = GOAL_DEFS.map(function (g) {
+          if (g.excludeDays && g.excludeDays.indexOf(selDay) > -1) return '';
+          var arr = wk.days[g.id];
+          var noteArr = g.hasNote ? wk.notes[g.id] : null;
+          var res = goalDayControl(g, selDay, arr, noteArr);
+          var labelHTML = '<span class="goal-icon">' + goalIconSVG(g.id) + '</span><span class="goal-label-text">' + escapeHtml(g.label) + '</span>';
+          return '<div class="goals-mobile-row' + (res.done ? ' is-done' : '') + '"><div class="goals-mobile-row-label">' + labelHTML + '</div><div class="goal-cell goals-mobile-row-control' + res.extraClass + '">' + res.html + '</div></div>';
+        }).join('');
+        mobileEl.innerHTML = '<div class="goals-mobile-tabs">' + dayTabs + '</div><div class="goals-mobile-rows">' + (dayRows || '<p class="empty-note">Nothing scheduled for this day.</p>') + '</div>';
+      }
 
       renderGoalsScore(wk);
     }
@@ -11387,6 +11431,21 @@ Place this code in the empty space below. */
       }).join('') + '</tr>';
       document.getElementById('mealplan-table').innerHTML =
         '<thead><tr><th></th>' + headCells + '</tr></thead><tbody>' + rowsByMeal + totalRow + '</tbody>';
+
+      var mobileEl = document.getElementById('mealplan-mobile');
+      if (mobileEl) {
+        mobileEl.innerHTML = state.mealPlan.map(function (day, di) {
+          var total = day.breakfast.kcal + day.lunch.kcal + day.dinner.kcal + day.snack.kcal;
+          var inRange = total >= goal.lowCal && total <= goal.highCal;
+          var rows = ['breakfast', 'lunch', 'dinner', 'snack'].map(function (mealKey) {
+            var m = day[mealKey];
+            var label = mealKey.charAt(0).toUpperCase() + mealKey.slice(1);
+            return '<div class="mealplan-mobile-row"><span class="mealplan-mobile-label">' + label + '</span>' +
+              '<span class="mealplan-food">' + escapeHtml(m.name) + '</span><span class="mealplan-kcal num">' + m.kcal + ' cal</span></div>';
+          }).join('');
+          return '<div class="mealplan-mobile-day"><p class="mealplan-mobile-day-label">' + MEALPLAN_DAY_LABELS[di] + '<span class="mealplan-total' + (inRange ? ' is-in-range' : '') + ' num">' + total + ' cal</span></p>' + rows + '</div>';
+        }).join('');
+      }
     }
     function renderNutrition() {
       renderNutritionGoal();
@@ -13051,6 +13110,10 @@ Place this code in the empty space below. */
 
       } else if (action === 'goals-this-week') {
         goalsViewWeekStart = null;
+        renderGoals();
+
+      } else if (action === 'goals-mobile-day') {
+        goalsMobileDay = Number(btn.getAttribute('data-day'));
         renderGoals();
 
       } else if (action === 'delete-session') {
