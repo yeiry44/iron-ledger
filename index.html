@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Iron Ledger</title>
+<title>Diary</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&amp;family=Quicksand:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -85,7 +85,12 @@
   .panel{ background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow); transition:box-shadow .18s ease; min-width:0; box-sizing:border-box; }
   .panel:hover{ box-shadow:0 2px 4px rgba(60,20,32,.08), 0 10px 26px rgba(60,20,32,.1); }
   .panel h2{ font-family:var(--font-display); font-style:italic; font-weight:600; font-size:20px; letter-spacing:.2px; text-transform:none; }
-  .panel-head-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+  .panel-head-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; cursor:pointer; }
+  .panel-head-row > h2:first-child{ flex:1 1 0%; min-width:0; margin:0; }
+  .panel-collapse-toggle{ background:none; border:none; color:var(--ink-dim); font-size:13px; cursor:pointer; padding:8px; margin:-8px -8px -8px 0; line-height:1; flex-shrink:0; transition:transform .15s ease, color .15s ease; }
+  .panel-collapse-toggle:hover{ color:var(--accent); }
+  .panel.is-collapsed .panel-collapse-toggle{ transform:rotate(-90deg); }
+  .panel.is-collapsed .panel-body{ display:none; }
   .goals-week-nav{ display:flex; align-items:center; gap:8px; }
   .week-nav-btn{ width:24px; height:24px; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--ink-dim); font-family:var(--font-mono); font-size:13px; line-height:1; cursor:pointer; transition:transform .12s ease, border-color .12s ease, color .12s ease; }
   .week-nav-btn:hover:not(:disabled){ color:var(--accent); border-color:var(--accent); transform:scale(1.08); }
@@ -616,11 +621,16 @@
   .schedule-day-col{ min-width:0; }
   .schedule-day-label{ font-family:var(--font-display); font-style:italic; font-weight:600; font-size:15px; margin-bottom:8px; }
   .schedule-quick-add{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
-  .schedule-quick-add button{ font-family:var(--font-mono); font-size:10.5px; background:var(--surface-2); border:1px dashed var(--line); border-radius:999px; padding:5px 10px; color:var(--ink-dim); cursor:pointer; }
+  .schedule-quick-add button{ font-family:var(--font-mono); font-size:10.5px; background:var(--surface-2); border:1px dashed var(--line); border-radius:999px; padding:5px 10px; color:var(--ink-dim); cursor:pointer; touch-action:none; }
   .schedule-quick-add button:hover{ border-color:var(--accent); color:var(--accent); }
-  .schedule-row{ display:flex; align-items:center; gap:8px; padding:2px 0; }
+  .schedule-quick-add button.is-calendar{ background:var(--good-soft); border-style:solid; border-color:var(--good-soft); color:var(--good); }
+  .schedule-quick-add button.is-calendar:hover{ border-color:var(--good); }
+  .schedule-row{ display:flex; align-items:center; gap:8px; padding:2px 0; border-radius:6px; }
+  .schedule-row.is-drop-target{ background:var(--accent-soft); box-shadow:inset 0 0 0 1.5px var(--accent); }
   .schedule-time{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-dim); width:52px; flex-shrink:0; text-align:right; }
-  .schedule-input{ flex:1; font-family:var(--font-body); font-size:12.5px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:0; }
+  .schedule-input{ flex:1; font-family:var(--font-body); font-size:12.5px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:5px 8px; min-width:0; touch-action:none; }
+  .schedule-input.is-dragging-source{ opacity:.4; }
+  .schedule-drag-ghost{ position:fixed; z-index:999; top:0; left:0; pointer-events:none; font-family:var(--font-body); font-size:12.5px; background:var(--accent); color:var(--accent-ink); padding:6px 12px; border-radius:999px; box-shadow:0 4px 14px rgba(0,0,0,.25); max-width:220px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
   .schedule-input:not(:placeholder-shown){ background:var(--accent-soft); border-color:var(--accent-2); }
   .schedule-row.is-hour-start .schedule-time{ font-weight:700; color:var(--ink); }
   .schedule-row.is-hour-start{ margin-top:4px; }
@@ -630,8 +640,7 @@
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <h1>Iron Ledger</h1>
-        <span class="brand-tag">training log</span>
+        <h1>Diary</h1>
       </div>
       <div class="topbar-meta">
         <span class="sync-status" id="sync-status" title="Cross-device sync status"></span>
@@ -645,7 +654,7 @@
     <div class="page" data-page="habits" id="page-habits">
       <section class="panel">
         <h2 style="margin-bottom:4px;">⏰ Daily Schedule</h2>
-        <p class="goals-footnote" style="margin:0 0 14px;">Work (Mon–Fri, 8–5) and anything on your calendar items fill in automatically; type in any slot to add, change, or clear it — an empty slot means nothing's there.</p>
+        <p class="goals-footnote" style="margin:0 0 14px;">Work (Mon–Fri, 8–5) and anything on your calendar items with a set time fill in automatically. Drag a chip below (or an already-scheduled item) onto a slot to place or move it, or just type in any slot to add, change, or clear it — an empty slot means nothing's there.</p>
         <details class="routines-details" style="margin-bottom:14px;">
           <summary>Manage quick-add buttons</summary>
           <div class="routines-body">
@@ -12572,6 +12581,17 @@ Place this code in the empty space below. */
           '<button type="button" class="grocery-remove" data-action="remove-quick-add" data-id="' + q.id + '" aria-label="Remove">×</button></div>';
       }).join('');
     }
+    // Calendar items with no startTime never auto-fill a slot (autoScheduleForDate only places
+    // ones that have a time) — surface those as chips too, so a recurring plan with no fixed time
+    // doesn't just quietly go unscheduled for the day.
+    function floatingCalendarEventsForDate(dateIso) {
+      var weekday = parseLocalISO(dateIso).getDay();
+      var monthKey = dateIso.slice(0, 7);
+      return state.calendarEvents.filter(function (c) {
+        if (c.startTime) return false;
+        return c.date === dateIso || (!c.date && c.weekdays && c.weekdays.indexOf(weekday) !== -1 && (!c.month || c.month === monthKey));
+      });
+    }
     function renderDailySchedule() {
       var el = document.getElementById('daily-schedule');
       if (!el) return;
@@ -12582,6 +12602,9 @@ Place this code in the empty space below. */
       el.innerHTML = dates.map(function (dateIso, i) {
         var quickAdds = state.scheduleQuickAdds.map(function (q) {
           return '<button type="button" data-action="quick-add-schedule" data-date="' + dateIso + '" data-title="' + attr(q.title) + '" data-duration="' + q.duration + '">+ ' + escapeHtml(q.title) + ' (' + durationHoursLabel(q.duration) + ')</button>';
+        }).join('') + floatingCalendarEventsForDate(dateIso).map(function (c) {
+          var dur = c.durationMin || 60;
+          return '<button type="button" class="is-calendar" data-action="quick-add-schedule" data-date="' + dateIso + '" data-title="' + attr(c.title) + '" data-duration="' + dur + '">📅 ' + escapeHtml(c.title) + ' (' + durationHoursLabel(dur) + ')</button>';
         }).join('');
         var rows = slots.map(function (slot) {
           var val = scheduleValueAt(dateIso, slot);
@@ -13665,8 +13688,162 @@ Place this code in the empty space below. */
       }
     });
 
+    /* ---- daily schedule drag & drop: pointer events (not HTML5 dnd) so this works the same with
+       mouse or touch. Drag sources are the quick-add/calendar chips (place a fresh block, sized by
+       duration) and any already-filled schedule-input (move just that one 30-min slot). A short
+       movement threshold lets a plain tap/click still pass through untouched. Bound once on the
+       #daily-schedule container via delegation since its innerHTML gets replaced on every render. */
+    function initScheduleDrag() {
+      var container = document.getElementById('daily-schedule');
+      if (!container || container.dataset.dragInit) return;
+      container.dataset.dragInit = '1';
+      var drag = null;
+
+      function rowAt(x, y) {
+        var el = document.elementFromPoint(x, y);
+        return el && el.closest ? el.closest('.schedule-row') : null;
+      }
+      function clearDropHighlight() {
+        var prev = document.querySelector('.schedule-row.is-drop-target');
+        if (prev) prev.classList.remove('is-drop-target');
+      }
+      function positionGhost(x, y) {
+        if (drag && drag.ghost) { drag.ghost.style.left = (x + 14) + 'px'; drag.ghost.style.top = (y + 14) + 'px'; }
+      }
+      function applyDrag(payload, targetDate, targetSlot) {
+        var slots = scheduleSlots();
+        var startIdx = slots.indexOf(targetSlot);
+        if (startIdx === -1) return;
+        if (!state.dailySchedule[targetDate]) state.dailySchedule[targetDate] = {};
+        if (payload.sourceDate && payload.sourceSlot) {
+          if (!state.dailySchedule[payload.sourceDate]) state.dailySchedule[payload.sourceDate] = {};
+          state.dailySchedule[payload.sourceDate][payload.sourceSlot] = '';
+          state.dailySchedule[targetDate][targetSlot] = payload.title;
+        } else {
+          var needed = Math.max(1, Math.ceil((payload.duration || 30) / 30));
+          for (var k = 0; k < needed && (startIdx + k) < slots.length; k++) {
+            state.dailySchedule[targetDate][slots[startIdx + k]] = payload.title;
+          }
+        }
+        renderDailySchedule();
+        scheduleSave();
+      }
+      function onMove(e) {
+        if (!drag) return;
+        var dx = e.clientX - drag.startX, dy = e.clientY - drag.startY;
+        if (!drag.moved && Math.hypot(dx, dy) > 8) {
+          drag.moved = true;
+          if (drag.sourceEl) drag.sourceEl.classList.add('is-dragging-source');
+          drag.ghost = document.createElement('div');
+          drag.ghost.className = 'schedule-drag-ghost';
+          drag.ghost.textContent = drag.title;
+          document.body.appendChild(drag.ghost);
+          if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+        }
+        if (drag.moved) {
+          e.preventDefault();
+          positionGhost(e.clientX, e.clientY);
+          var edge = 70;
+          if (e.clientY < edge) window.scrollBy(0, -(edge - e.clientY) / 3);
+          else if (e.clientY > window.innerHeight - edge) window.scrollBy(0, (e.clientY - (window.innerHeight - edge)) / 3);
+          clearDropHighlight();
+          var row = rowAt(e.clientX, e.clientY);
+          if (row) row.classList.add('is-drop-target');
+        }
+      }
+      function onUp(e) {
+        document.removeEventListener('pointermove', onMove);
+        document.removeEventListener('pointerup', onUp);
+        if (!drag) return;
+        var moved = drag.moved;
+        if (drag.sourceEl) {
+          drag.sourceEl.classList.remove('is-dragging-source');
+          if (moved) drag.sourceEl._dragSuppressClick = true;
+        }
+        clearDropHighlight();
+        if (drag.ghost) drag.ghost.remove();
+        if (moved) {
+          var row = rowAt(e.clientX, e.clientY);
+          if (row) {
+            var input = row.querySelector('.schedule-input');
+            applyDrag(drag, input.getAttribute('data-date'), input.getAttribute('data-slot'));
+          }
+        }
+        drag = null;
+      }
+      container.addEventListener('pointerdown', function (e) {
+        if (e.pointerType === 'mouse' && e.button !== 0) return;
+        var chip = e.target.closest('[data-action="quick-add-schedule"]');
+        var input = !chip ? e.target.closest('.schedule-input') : null;
+        var payload;
+        if (chip) {
+          payload = { title: chip.getAttribute('data-title'), duration: Number(chip.getAttribute('data-duration')), sourceEl: chip };
+        } else if (input && input.value.trim()) {
+          payload = { title: input.value.trim(), duration: 30, sourceDate: input.getAttribute('data-date'), sourceSlot: input.getAttribute('data-slot'), sourceEl: input };
+        } else {
+          return;
+        }
+        payload.startX = e.clientX; payload.startY = e.clientY; payload.moved = false;
+        drag = payload;
+        document.addEventListener('pointermove', onMove);
+        document.addEventListener('pointerup', onUp);
+      });
+      container.addEventListener('click', function (e) {
+        var t = e.target.closest('[data-action="quick-add-schedule"], .schedule-input');
+        if (t && t._dragSuppressClick) { e.preventDefault(); e.stopPropagation(); t._dragSuppressClick = false; }
+      }, true);
+    }
+
+    /* ---- collapsible panels: each .panel becomes a click-to-collapse box. Panel shells are
+       static HTML (only inner IDs get re-rendered), so this runs once and the DOM restructuring
+       it does survives every later renderAll(). Collapse state persists per-device in
+       localStorage, keyed by page + heading text since panels don't all have stable ids. ---- */
+    function initCollapsiblePanels() {
+      document.querySelectorAll('.panel').forEach(function (panel) {
+        if (panel.dataset.collapseInit) return;
+        var head = panel.querySelector(':scope > .panel-head-row');
+        var heading = head ? head.querySelector('h2') : panel.querySelector(':scope > h2');
+        if (!heading) return;
+        panel.dataset.collapseInit = '1';
+        if (!head) {
+          head = document.createElement('div');
+          head.className = 'panel-head-row';
+          panel.insertBefore(head, heading);
+          head.appendChild(heading);
+        }
+        var toggle = document.createElement('button');
+        toggle.type = 'button';
+        toggle.className = 'panel-collapse-toggle';
+        toggle.setAttribute('aria-label', 'Collapse section');
+        toggle.textContent = '▾';
+        head.appendChild(toggle);
+
+        var body = document.createElement('div');
+        body.className = 'panel-body';
+        Array.prototype.slice.call(panel.children).forEach(function (child) {
+          if (child !== head) body.appendChild(child);
+        });
+        panel.appendChild(body);
+
+        var page = panel.closest('.page');
+        var key = 'panelCollapsed:' + (page ? page.dataset.page : '') + ':' + heading.textContent.trim();
+        var collapsed = false;
+        try { collapsed = localStorage.getItem(key) === '1'; } catch (e) {}
+        if (collapsed) panel.classList.add('is-collapsed');
+
+        head.addEventListener('click', function (e) {
+          var interactive = e.target.closest('button, select, a, input, label');
+          if (interactive && interactive !== toggle) return;
+          panel.classList.toggle('is-collapsed');
+          try { localStorage.setItem(key, panel.classList.contains('is-collapsed') ? '1' : '0'); } catch (e) {}
+        });
+      });
+    }
+
     /* ---- init ---- */
     renderAll();
+    initCollapsiblePanels();
+    initScheduleDrag();
   })();
   </script>
 </body>
