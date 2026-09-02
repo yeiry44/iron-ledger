@@ -339,6 +339,15 @@
   .goals-footnote{ font-size:12px; color:var(--ink-dim); margin:14px 0 0; }
   .goals-footnote code{ background:var(--surface-2); border-radius:4px; padding:1px 5px; font-family:var(--font-mono); font-size:11px; }
 
+  /* ---- motivation banner: escalates with progress (workout streak) so encouragement grows
+     alongside actual momentum instead of staying static ---- */
+  .motivation-banner{ display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-style:italic; font-weight:600; font-size:14px; color:var(--ink-dim); margin:12px 0; padding:10px 14px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); }
+  .motivation-banner.tier-1{ color:var(--ink); }
+  .motivation-banner.tier-2{ color:var(--accent); border-color:var(--accent); background:var(--accent-soft); }
+  .motivation-banner.tier-3{ color:var(--good); border-color:var(--good); background:var(--good-soft); }
+  .motivation-banner.tier-4{ color:#fff; border-color:var(--accent); background:linear-gradient(90deg, var(--accent), var(--good)); }
+  .motivation-banner .num{ font-family:var(--font-mono); font-style:normal; }
+
   /* ---- page nav ---- */
   .page-nav{ display:flex; gap:8px; flex-wrap:wrap; }
   .page-nav-btn{ background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:9px 16px; font-family:var(--font-display); font-style:italic; font-weight:600; font-size:14px; color:var(--ink-dim); cursor:pointer; box-shadow:var(--shadow); transition:transform .12s ease, border-color .12s ease, color .12s ease, box-shadow .12s ease; }
@@ -437,6 +446,7 @@
   .grocery-name{ flex:1; font-size:14px; }
   .grocery-cat{ font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); flex:0 0 auto; }
   .grocery-cart-badge{ font-family:var(--font-mono); font-size:10px; letter-spacing:.5px; background:var(--good-soft); color:var(--good); padding:2px 8px; border-radius:999px; flex:0 0 auto; }
+  .grocery-store-badge{ font-family:var(--font-mono); font-size:10px; letter-spacing:.5px; background:var(--accent-soft); color:var(--accent); padding:2px 8px; border-radius:999px; flex:0 0 auto; cursor:help; }
   .grocery-remove{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-size:16px; flex:0 0 auto; }
   .grocery-remove:hover{ color:var(--danger); }
 
@@ -673,6 +683,8 @@
         <button class="unit-toggle" id="unit-toggle" type="button" data-action="toggle-unit"></button>
       </div>
     </header>
+
+    <div class="motivation-banner" id="motivation-banner"></div>
 
     <nav class="page-nav" id="page-nav" aria-label="Dashboard sections"></nav>
 
@@ -10036,6 +10048,12 @@ Place this code in the empty space below. */
     if (!Array.isArray(state.pantry)) state.pantry = [];
     if (!state.saleWatch || typeof state.saleWatch !== 'object') state.saleWatch = { checkedAt: null, items: [], note: '' };
     if (!Array.isArray(state.saleWatch.items)) state.saleWatch.items = [];
+    // Weekly HEB-vs-Whole-Foods price/sale/organic research per staple grocery ingredient (refreshed
+    // by a scheduled task, same pattern as saleWatch above). items[].name is matched case-insensitively
+    // against grocery-list item names to show a badge, and against MEAL_POOLS ingredient names to give
+    // the weekly meal plan a nudge toward whatever's actually on sale that week.
+    if (!state.grocerySaleWatch || typeof state.grocerySaleWatch !== 'object') state.grocerySaleWatch = { checkedAt: null, items: [], note: '' };
+    if (!Array.isArray(state.grocerySaleWatch.items)) state.grocerySaleWatch.items = [];
     state.beautyProducts.forEach(function (bp) {
       if (bp.stillUsing === undefined) bp.stillUsing = true;
       if (!bp.dateAdded) bp.dateAdded = todayISO();
@@ -10646,6 +10664,54 @@ Place this code in the empty space below. */
       }
       return streak;
     }
+    function computeBestStreak() {
+      var dates = Array.prototype.slice.call(activeDatesSet()).sort();
+      var best = 0, run = 0, prevDate = null;
+      dates.forEach(function (dISO) {
+        if (prevDate) {
+          var nextExpected = parseLocalISO(prevDate);
+          nextExpected.setDate(nextExpected.getDate() + 1);
+          var expectedISO = nextExpected.getFullYear() + '-' + pad(nextExpected.getMonth() + 1) + '-' + pad(nextExpected.getDate());
+          run = (dISO === expectedISO) ? run + 1 : 1;
+        } else {
+          run = 1;
+        }
+        if (run > best) best = run;
+        prevDate = dISO;
+      });
+      return best;
+    }
+    // Motivation scales with progress on purpose — a bare streak counter is neutral, but the
+    // tone/visual weight escalating with it (plain -> accent -> good -> gradient) is what actually
+    // makes hitting day 7 or day 30 feel different from day 1.
+    function renderMotivation() {
+      var el = document.getElementById('motivation-banner');
+      if (!el) return;
+      var streak = computeStreak();
+      var best = computeBestStreak();
+      var isNewBest = streak > 0 && streak >= best;
+      var tier, text;
+      if (streak === 0) {
+        tier = 0; text = '💪 Start today — every streak begins with day one.';
+      } else if (streak === 1) {
+        tier = 1; text = '🌱 Day 1 — you showed up. That\'s the hardest part.';
+      } else if (streak < 3) {
+        tier = 1; text = '🌱 <span class="num">' + streak + '</span>-day streak — keep the momentum.';
+      } else if (streak < 7) {
+        tier = 2; text = '🔥 <span class="num">' + streak + '</span>-day streak — you\'re building something real.';
+      } else if (streak < 14) {
+        tier = 2; text = '🔥🔥 <span class="num">' + streak + '</span> days strong — a full week and counting.';
+      } else if (streak < 30) {
+        tier = 3; text = '🔥🔥🔥 <span class="num">' + streak + '</span>-day streak — this is a habit now.';
+      } else if (streak < 60) {
+        tier = 4; text = '👑 <span class="num">' + streak + '</span> days — you\'re unstoppable.';
+      } else {
+        tier = 4; text = '🏆 <span class="num">' + streak + '</span>-day streak — genuinely elite consistency.';
+      }
+      if (isNewBest && streak > 1) text += ' New personal best!';
+      el.className = 'motivation-banner tier-' + tier;
+      el.innerHTML = text;
+    }
     function weekStats() {
       var cutoff = new Set(); for (var i = 0; i < 7; i++) cutoff.add(isoDaysAgo(i));
       var sessionDates = new Set(); var volume = 0;
@@ -10809,7 +10875,9 @@ Place this code in the empty space below. */
     function goalsCaption(pct, isFull) {
       if (isFull) return "Perfect week — every goal hit. You crushed it! 🎉";
       if (pct === 0) return "Fresh start — let's go 🌸";
-      if (pct < 50) return "Building momentum...";
+      if (pct < 25) return "Building momentum...";
+      if (pct < 50) return "Picking up speed — keep going 💪";
+      if (pct < 75) return "Over halfway — you're doing amazing ✨";
       return "So close — finish strong 💪";
     }
     function renderGoalsScore(wk) {
@@ -11251,6 +11319,13 @@ Place this code in the empty space below. */
           '<button type="button" class="day-item-remove" data-action="remove-pantry-item" data-id="' + p.id + '" aria-label="Remove">×</button></div>';
       }).join('') : '<p class="empty-note">Nothing added yet — list what you already have and I\'ll build the week around it.</p>';
     }
+    function grocerySaleInfoFor(name) {
+      var n = (name || '').toLowerCase();
+      return state.grocerySaleWatch.items.find(function (it) {
+        var itn = (it.name || '').toLowerCase();
+        return n.indexOf(itn) > -1 || itn.indexOf(n) > -1;
+      }) || null;
+    }
     function renderGrocery() {
       var el = document.getElementById('grocery-list');
       var leftCount = state.grocery.filter(function (g) { return !g.checked; }).length;
@@ -11263,19 +11338,21 @@ Place this code in the empty space below. */
       state.grocery.forEach(function (g) { (byCat[g.category] = byCat[g.category] || []).push(g); });
       el.innerHTML = Object.keys(byCat).sort().map(function (cat) {
         return byCat[cat].map(function (g) {
+          var saleInfo = grocerySaleInfoFor(g.name);
+          var saleBadge = saleInfo ? '<span class="grocery-store-badge" title="' + attr((saleInfo.note || '') + (saleInfo.organic ? ' · ' + saleInfo.organic : '')) + '">🏷️ ' + escapeHtml(saleInfo.cheaperStore || '') + '</span>' : '';
           return '<div class="grocery-row' + (g.checked ? ' is-checked' : '') + '">' +
             '<button type="button" class="grocery-check" data-action="toggle-grocery" data-id="' + g.id + '">' + (g.checked ? '✓' : '') + '</button>' +
-            '<span class="grocery-name">' + escapeHtml(g.name) + '</span>' +
+            '<span class="grocery-name">' + escapeHtml(g.name) + '</span>' + saleBadge +
             (g.inCart ? '<span class="grocery-cart-badge" title="' + (g.cartAddedAt ? 'Added to your Amazon cart ' + formatHeading(g.cartAddedAt) : 'Added to your Amazon cart') + '">🛒 in cart</span>' : '') +
             '<span class="grocery-cat">' + escapeHtml(g.category) + '</span>' +
             '<button type="button" class="grocery-remove" data-action="remove-grocery" data-id="' + g.id + '" aria-label="Remove">×</button></div>';
         }).join('');
       }).join('');
     }
-    /* ---- weekly meal plan: built from her real Whole Foods/Amazon grocery staples + general
+    /* ---- weekly meal plan: built from her real HEB/Whole Foods grocery staples + general
        gastritis-friendly (low-acid/low-fat/non-spicy) foods, aimed at her computed calorie goal.
-       No live weekly-sales-flyer feed was reachable, so "on sale" isn't factored in automatically
-       — flagged in the footnote rather than guessed at. */
+       Nudged toward whatever's actually on sale this week via state.grocerySaleWatch (refreshed by
+       a scheduled task, same pattern as saleWatch on the Beauty page) — see onSaleNames below. */
     /* ---- meal pools: deliberately built from a small, reused ingredient set (no zucchini/quinoa
        per her request) so one grocery run covers the whole week rather than one-off items. ---- */
     var MEAL_POOLS = {
@@ -11333,11 +11410,16 @@ Place this code in the empty space below. */
       // share, Sun gets its own) rather than changing every single day — 4 distinct picks
       // spread across the week instead of 7.
       var pantryNames = (state.pantry || []).map(function (p) { return p.name.toLowerCase(); });
+      // Nudges the pick toward whatever's actually on sale this week at HEB/Whole Foods (see
+      // state.grocerySaleWatch, refreshed weekly) — reuses the same overlap-boost mechanism as
+      // pantry items above rather than a separate sort pass.
+      var onSaleNames = state.grocerySaleWatch.items.filter(function (it) { return it.onSale; }).map(function (it) { return (it.name || '').toLowerCase(); });
+      var priorityNames = pantryNames.concat(onSaleNames);
       var slots = Math.ceil(7 / 2);
-      var b = shuffledCycle(MEAL_POOLS.breakfast, slots, pantryNames);
-      var l = shuffledCycle(MEAL_POOLS.lunch, slots, pantryNames);
-      var d = shuffledCycle(MEAL_POOLS.dinner, slots, pantryNames);
-      var s = shuffledCycle(MEAL_POOLS.snack, slots, pantryNames);
+      var b = shuffledCycle(MEAL_POOLS.breakfast, slots, priorityNames);
+      var l = shuffledCycle(MEAL_POOLS.lunch, slots, priorityNames);
+      var d = shuffledCycle(MEAL_POOLS.dinner, slots, priorityNames);
+      var s = shuffledCycle(MEAL_POOLS.snack, slots, priorityNames);
       var plan = [];
       for (var i = 0; i < 7; i++) {
         var slot = Math.floor(i / 2);
@@ -11432,6 +11514,13 @@ Place this code in the empty space below. */
       document.getElementById('mealplan-table').innerHTML =
         '<thead><tr><th></th>' + headCells + '</tr></thead><tbody>' + rowsByMeal + totalRow + '</tbody>';
 
+      var footnoteEl = document.getElementById('mealplan-footnote');
+      if (footnoteEl) {
+        var gsw = state.grocerySaleWatch;
+        footnoteEl.textContent = gsw.checkedAt
+          ? (gsw.note || ('Checked HEB vs Whole Foods pricing ' + formatHeading(gsw.checkedAt) + ' — organic/clean picks and whichever store is cheaper are flagged on your grocery list.'))
+          : 'HEB vs Whole Foods pricing and sales haven\'t been checked yet — this refreshes automatically once a week and nudges the plan toward organic picks and whatever\'s on sale.';
+      }
       var mobileEl = document.getElementById('mealplan-mobile');
       if (mobileEl) {
         mobileEl.innerHTML = state.mealPlan.map(function (day, di) {
@@ -12800,6 +12889,7 @@ Place this code in the empty space below. */
     function renderAll() {
       ensureTodayDefault();
       renderHeader();
+      renderMotivation();
       renderPageNav();
       renderStats();
       renderSchedule();
