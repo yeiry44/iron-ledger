@@ -11354,7 +11354,10 @@ Place this code in the empty space below. */
        Nudged toward whatever's actually on sale this week via state.grocerySaleWatch (refreshed by
        a scheduled task, same pattern as saleWatch on the Beauty page) — see onSaleNames below. */
     /* ---- meal pools: deliberately built from a small, reused ingredient set (no zucchini/quinoa
-       per her request) so one grocery run covers the whole week rather than one-off items. ---- */
+       per her request) so one grocery run covers the whole week rather than one-off items. A couple
+       of entries (arroz con pollo, garlic-herb chicken thighs) are gastritis-adapted takes on ideas
+       from her saved TikTok "Food" collection — same reused ingredients, milder seasoning, no
+       tomato sauce or heavy spice. ---- */
     var MEAL_POOLS = {
       breakfast: [
         { name: 'Scrambled eggs (2) with oatmeal & banana', kcal: 350, ingredients: ['eggs', 'oatmeal', 'banana'] },
@@ -11368,14 +11371,16 @@ Place this code in the empty space below. */
         { name: 'Baked chicken breast, brown rice & steamed carrots', kcal: 450, ingredients: ['chicken breast', 'brown rice', 'carrots'] },
         { name: 'Mild turkey & rice soup with steamed carrots', kcal: 380, ingredients: ['ground turkey', 'brown rice', 'carrots'] },
         { name: 'Grilled chicken over spinach with olive oil & herbs, brown rice', kcal: 430, ingredients: ['chicken breast', 'spinach', 'brown rice'] },
-        { name: 'Baked chicken breast, mashed sweet potato & sautéed spinach', kcal: 400, ingredients: ['chicken breast', 'sweet potato', 'spinach'] }
+        { name: 'Baked chicken breast, mashed sweet potato & sautéed spinach', kcal: 400, ingredients: ['chicken breast', 'sweet potato', 'spinach'] },
+        { name: 'Arroz con pollo, Puerto Rican-style (mild seasoning, no hot spice), with steamed carrots', kcal: 440, ingredients: ['chicken thighs', 'brown rice', 'carrots'] }
       ],
       dinner: [
         { name: 'Oven-roasted chicken wings (skin removed), sweet potato wedges & green beans', kcal: 480, ingredients: ['chicken wings', 'sweet potato', 'green beans'] },
         { name: 'Ground turkey & brown rice bake with steamed carrots (no tomato sauce)', kcal: 440, ingredients: ['ground turkey', 'brown rice', 'carrots'] },
         { name: 'Baked chicken thigh (skin removed), brown rice & steamed green beans', kcal: 460, ingredients: ['chicken thighs', 'brown rice', 'green beans'] },
         { name: 'Turkey meatballs (herb & olive oil, no tomato sauce) over sautéed spinach', kcal: 400, ingredients: ['ground turkey', 'spinach'] },
-        { name: 'Roast chicken thigh (skin removed), mashed sweet potato & green beans', kcal: 470, ingredients: ['chicken thighs', 'sweet potato', 'green beans'] }
+        { name: 'Roast chicken thigh (skin removed), mashed sweet potato & green beans', kcal: 470, ingredients: ['chicken thighs', 'sweet potato', 'green beans'] },
+        { name: 'Garlic-herb roasted chicken thighs (skin removed) with roasted sweet potato', kcal: 450, ingredients: ['chicken thighs', 'sweet potato'] }
       ],
       snack: [
         { name: 'Banana with a tablespoon of almond butter', kcal: 180, ingredients: ['banana', 'almond butter'] },
