@@ -10352,12 +10352,22 @@ Place this code in the empty space below. */
       var el = document.activeElement;
       return !!el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT');
     }
+    // A lastModified more than a day ahead of this device's own clock is treated as corrupted
+    // (e.g. a bad manual write to the database) rather than "the future" — this self-heals: a
+    // poisoned value sanitizes to 0 on whichever side has it, so the other side's real timestamp
+    // wins the very next legitimate save instead of every device staying stuck forever comparing
+    // itself against a fake-future high-water mark.
+    function sanitizedLastModified(v) {
+      var now = Date.now();
+      return (typeof v === 'number' && v > 0 && v < now + 24 * 60 * 60 * 1000) ? v : 0;
+    }
     function applyRemoteState(remote) {
       if (!remote || typeof remote !== 'object') return;
-      if (typeof remote.lastModified !== 'number' || remote.lastModified <= (state.lastModified || 0)) return;
+      if (sanitizedLastModified(remote.lastModified) <= sanitizedLastModified(state.lastModified)) return;
       if (isTypingNow()) { setTimeout(function () { applyRemoteState(remote); }, 1000); return; }
       fbApplyingRemote = true;
       state = remote;
+      state.lastModified = sanitizedLastModified(remote.lastModified) || Date.now();
       normalizeState();
       saveLocalStorage(state);
       renderAll();
