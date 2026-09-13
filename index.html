@@ -506,6 +506,18 @@
   .travel-notes-edit{ width:100%; font-family:var(--font-body); font-size:12.5px; line-height:1.5; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:8px; resize:vertical; }
   .travel-email-findings{ margin-top:8px; padding:8px 10px; background:var(--surface); border:1px dashed var(--line); border-radius:8px; }
   .travel-email-head{ margin:0 0 4px; font-family:var(--font-mono); font-size:10px; letter-spacing:1px; text-transform:uppercase; color:var(--ink-dim); }
+  .travel-itinerary{ margin-top:10px; padding-top:8px; border-top:1px dashed var(--line); }
+  .travel-itinerary > summary{ list-style:none; cursor:pointer; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-dim); letter-spacing:.5px; }
+  .travel-itinerary > summary::-webkit-details-marker{ display:none; }
+  .travel-itinerary > summary::before{ content:'▾ '; }
+  .travel-itinerary[open] > summary{ margin-bottom:8px; }
+  .travel-day-tabs{ display:flex; gap:5px; flex-wrap:wrap; margin-bottom:8px; }
+  .travel-day-tab{ display:flex; flex-direction:column; align-items:center; gap:1px; font-family:var(--font-mono); font-size:9.5px; background:var(--surface); border:1px solid var(--line); border-radius:8px; padding:5px 8px; color:var(--ink-dim); cursor:pointer; }
+  .travel-day-tab span{ font-size:8.5px; color:var(--ink-dim); }
+  .travel-day-tab.is-active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .travel-day-tab.is-active span{ color:var(--accent-ink); }
+  .travel-itinerary-summary{ width:100%; font-family:var(--font-body); font-size:12.5px; line-height:1.5; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:7px 8px; resize:vertical; margin-bottom:8px; }
+  .travel-itinerary-hours{ max-height:340px; overflow-y:auto; padding-right:2px; }
   .travel-email-item{ margin:0; padding:3px 0; font-size:12px; color:var(--ink); line-height:1.5; }
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
   .travel-card-actions{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
@@ -10028,6 +10040,11 @@ Place this code in the empty space below. */
       }
       delete trv.savingsGoal;
       delete trv.savingsSaved;
+      // Day-by-day hour-by-hour itinerary — only ever shown/edited for a "planned" trip once it
+      // has a start/end date, so an editable schedule replaces re-typing the whole trip into prose.
+      if (trv.startDate === undefined) trv.startDate = null;
+      if (trv.endDate === undefined) trv.endDate = null;
+      if (!trv.dailyPlan || typeof trv.dailyPlan !== 'object') trv.dailyPlan = {};
     });
     if (!Array.isArray(state.beautyProducts)) state.beautyProducts = [];
     if (!Array.isArray(state.books)) state.books = [];
@@ -11918,6 +11935,51 @@ Place this code in the empty space below. */
       }).join('\n');
     }
     var travelEditIds = {}; // ephemeral UI state — which cards are in edit mode; not persisted
+    var travelItineraryDay = {}; // ephemeral UI state — selected day (per trip id) for the hour-by-hour itinerary; not persisted
+    function tripDayList(t) {
+      if (!t.startDate || !t.endDate) return [];
+      var days = [];
+      var cur = parseLocalISO(t.startDate);
+      var end = parseLocalISO(t.endDate);
+      var guard = 0;
+      while (cur <= end && guard < 60) {
+        days.push(cur.getFullYear() + '-' + pad(cur.getMonth() + 1) + '-' + pad(cur.getDate()));
+        cur.setDate(cur.getDate() + 1);
+        guard++;
+      }
+      return days;
+    }
+    function travelHourSlots() {
+      var slots = [];
+      for (var h = 6; h <= 23; h++) slots.push(pad(h) + ':00');
+      return slots;
+    }
+    // Hour-by-hour, editable itinerary — only ever shown for a "planned" trip, and only once it has
+    // a start/end date set (via ✎ Edit details above), so this never appears for a wishlist idea
+    // that has no real dates yet.
+    function travelItineraryHTML(t) {
+      var days = tripDayList(t);
+      if (!days.length) {
+        return '<p class="goals-footnote" style="margin-top:8px;">Add a start and end date above (✎ Edit details) to build a day-by-day, hour-by-hour itinerary here.</p>';
+      }
+      var selDay = (travelItineraryDay[t.id] && days.indexOf(travelItineraryDay[t.id]) > -1) ? travelItineraryDay[t.id] : days[0];
+      var dayTabs = days.map(function (d, i) {
+        return '<button type="button" class="travel-day-tab' + (d === selDay ? ' is-active' : '') + '" data-action="travel-itinerary-day" data-id="' + t.id + '" data-date="' + d + '">Day ' + (i + 1) + '<span>' + formatHeading(d) + '</span></button>';
+      }).join('');
+      var dayPlan = t.dailyPlan[selDay] || {};
+      var summaryHTML = '<textarea class="travel-itinerary-summary" rows="2" placeholder="Summary of the day (e.g. Arrive in Bali, settle into the villa, welcome dinner)" maxlength="300" data-input="travel-itinerary-summary" data-id="' + t.id + '" data-date="' + selDay + '">' + escapeHtml(dayPlan.summary || '') + '</textarea>';
+      var rows = travelHourSlots().map(function (slot) {
+        var val = (dayPlan.hours && dayPlan.hours[slot]) || '';
+        return '<div class="schedule-row"><span class="schedule-time">' + formatSlotLabel(slot) + '</span>' +
+          '<input type="text" class="schedule-input" data-input="travel-itinerary-hour" data-id="' + t.id + '" data-date="' + selDay + '" data-hour="' + slot + '" value="' + attr(val) + '" placeholder="—" maxlength="80"></div>';
+      }).join('');
+      return '<details class="travel-itinerary" open>' +
+        '<summary>📅 Day-by-day itinerary</summary>' +
+        '<div class="travel-day-tabs">' + dayTabs + '</div>' +
+        summaryHTML +
+        '<div class="travel-itinerary-hours">' + rows + '</div>' +
+        '</details>';
+    }
     var beautySearchQuery = ''; // ephemeral UI state — local filter text for curated picks; not persisted
     var beautyFormRating = 0; // ephemeral UI state — star rating picked in the add-product form before submit; not persisted
     function travelCardHTML(t, colId) {
@@ -11957,6 +12019,10 @@ Place this code in the empty space below. */
           '<div class="travel-edit-grid">' +
           '<label class="travel-edit-field"><span>When</span><input type="text" placeholder="e.g. next spring" maxlength="60" data-input="travel-dates-edit" data-id="' + t.id + '" value="' + attr(t.dates || '') + '"></label>' +
           '<label class="travel-edit-field"><span>Est. budget</span><input type="text" placeholder="e.g. $2,500" maxlength="40" data-input="travel-budget-edit" data-id="' + t.id + '" value="' + attr(t.budget || '') + '"></label>' +
+          (colId === 'planned'
+            ? '<label class="travel-edit-field"><span>Trip start date</span><input type="date" data-input="travel-startdate-edit" data-id="' + t.id + '" value="' + (t.startDate || '') + '"></label>' +
+              '<label class="travel-edit-field"><span>Trip end date</span><input type="date" data-input="travel-enddate-edit" data-id="' + t.id + '" value="' + (t.endDate || '') + '"></label>'
+            : '') +
           '</div>' +
           savingsEditHTML +
           '<label class="travel-edit-field" style="margin-bottom:6px;"><span>Why / highlights</span><input type="text" placeholder="What\'s drawing you there" maxlength="140" data-input="travel-highlights-edit" data-id="' + t.id + '" value="' + attr(t.highlights || '') + '"></label>' +
@@ -11975,8 +12041,9 @@ Place this code in the empty space below. */
           emailBlock +
           '</details>'
         : (isEditing ? emailBlock : '');
+      var dayPlanBlock = (colId === 'planned' && !isEditing) ? travelItineraryHTML(t) : '';
       return '<div class="travel-card' + (isEditing ? ' is-editing' : '') + '">' + mainBlock +
-        itinerary + detailsBlock +
+        itinerary + detailsBlock + dayPlanBlock +
         '<div class="travel-card-actions">' + actions + '</div></div>';
     }
     function renderTravel() {
@@ -13221,6 +13288,10 @@ Place this code in the empty space below. */
         goalsMobileDay = Number(btn.getAttribute('data-day'));
         renderGoals();
 
+      } else if (action === 'travel-itinerary-day') {
+        travelItineraryDay[btn.getAttribute('data-id')] = btn.getAttribute('data-date');
+        renderTravel();
+
       } else if (action === 'delete-session') {
         var sid = btn.getAttribute('data-session');
         var sidx = state.sessions.findIndex(function (x) { return x.id === sid; });
@@ -13575,6 +13646,32 @@ Place this code in the empty space below. */
       } else if (kind === 'travel-highlights-edit') {
         var trvHighlights = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
         if (trvHighlights) { trvHighlights.highlights = t.value; scheduleSaveDebounced(); }
+
+      } else if (kind === 'travel-startdate-edit') {
+        var trvStart = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (trvStart) { trvStart.startDate = t.value || null; renderTravel(); scheduleSaveDebounced(); }
+
+      } else if (kind === 'travel-enddate-edit') {
+        var trvEnd = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (trvEnd) { trvEnd.endDate = t.value || null; renderTravel(); scheduleSaveDebounced(); }
+
+      } else if (kind === 'travel-itinerary-summary') {
+        var trvSumTrip = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (trvSumTrip) {
+          var sumDate = t.getAttribute('data-date');
+          if (!trvSumTrip.dailyPlan[sumDate]) trvSumTrip.dailyPlan[sumDate] = { summary: '', hours: {} };
+          trvSumTrip.dailyPlan[sumDate].summary = t.value;
+          scheduleSaveDebounced();
+        }
+
+      } else if (kind === 'travel-itinerary-hour') {
+        var trvHourTrip = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (trvHourTrip) {
+          var hourDate = t.getAttribute('data-date'), hourSlot = t.getAttribute('data-hour');
+          if (!trvHourTrip.dailyPlan[hourDate]) trvHourTrip.dailyPlan[hourDate] = { summary: '', hours: {} };
+          trvHourTrip.dailyPlan[hourDate].hours[hourSlot] = t.value;
+          scheduleSaveDebounced();
+        }
 
       } else if (kind === 'beauty-comment') {
         var bpNote = state.beautyProducts.find(function (x) { return x.id === t.getAttribute('data-id'); });
