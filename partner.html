@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Diary</title>
+<title>Workout Partner</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&amp;family=Quicksand:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -686,6 +686,15 @@
   .schedule-input:not(:placeholder-shown){ background:var(--accent-soft); border-color:var(--accent-2); }
   .schedule-row.is-hour-start .schedule-time{ font-weight:700; color:var(--ink); }
   .schedule-row.is-hour-start{ margin-top:4px; }
+
+  /* ---- workout-partner restriction: this file is a trimmed copy of the main app for a second
+     person to log their own workouts on — only the Exercise page is reachable here, everything
+     else (Habit Tracker, Nutrition, Financial, Travel, Beauty, Books, Bucket List) stays hidden
+     regardless of what renderPageNav() does internally, and the page-nav row itself is hidden
+     since there's only one page to switch to. ---- */
+  #page-nav{ display:none !important; }
+  .page:not(#page-exercise){ display:none !important; }
+  #page-exercise{ display:block !important; } /* force-shown regardless of state.activePage, which is a shared field synced from the main app and may not say "exercise" */
   .partner-view-panel{ border-color:var(--accent); }
   .partner-ex-row{ display:flex; align-items:center; gap:10px; padding:6px 0; border-bottom:1px solid var(--line); font-size:13.5px; }
   .partner-ex-row:last-child{ border-bottom:none; }
@@ -699,7 +708,7 @@
   <div class="app">
     <header class="topbar">
       <div class="brand">
-        <h1>Diary</h1>
+        <h1>Workout Partner</h1>
       </div>
       <div class="topbar-meta">
         <span class="sync-status" id="sync-status" title="Cross-device sync status"></span>
@@ -760,7 +769,7 @@
       <section class="stats-strip" id="stats-strip" aria-label="This week at a glance"></section>
 
       <section class="panel partner-view-panel" aria-labelledby="partner-view-heading">
-        <h2 id="partner-view-heading" style="margin-bottom:10px;">👯 Partner's workout today</h2>
+        <h2 id="partner-view-heading" style="margin-bottom:10px;">👯 Sophie's workout today</h2>
         <div id="partner-view"><p class="empty-note">Connecting…</p></div>
       </section>
 
@@ -10029,19 +10038,13 @@ Place this code in the empty space below. */
     // can come back missing fields this same defaulting logic needs to backfill before render.
     function normalizeState() {
     if (typeof state.lastModified !== 'number') state.lastModified = 0;
-    if (!state.routines) state.routines = [];
-    if (!state.sessions) state.sessions = [];
-    if (!state.unit) state.unit = 'lb';
-    if (state.activeRoutineId === undefined) state.activeRoutineId = null;
-    if (state.activeDate === undefined) state.activeDate = null;
-    if (!Array.isArray(state.schedule) || state.schedule.length !== 7) state.schedule = [null, null, null, null, null, null, null];
-    if (!state.restSeconds) state.restSeconds = 90;
-    // Your workout partner's own routines/sessions/schedule — written by partner.html, only ever
-    // read here for the cross-view panel; this app never touches them.
     if (!state.partnerRoutines) state.partnerRoutines = [];
     if (!state.partnerSessions) state.partnerSessions = [];
+    if (!state.unit) state.unit = 'lb';
     if (state.partnerActiveRoutineId === undefined) state.partnerActiveRoutineId = null;
+    if (state.activeDate === undefined) state.activeDate = null;
     if (!Array.isArray(state.partnerSchedule) || state.partnerSchedule.length !== 7) state.partnerSchedule = [null, null, null, null, null, null, null];
+    if (!state.restSeconds) state.restSeconds = 90;
     if (!Array.isArray(state.goalWeeks)) state.goalWeeks = [];
     if (typeof state.babbelPointer !== 'number') state.babbelPointer = 0;
     if (typeof state.biblePointer !== 'number') state.biblePointer = 0;
@@ -10295,7 +10298,7 @@ Place this code in the empty space below. */
       if (state.activeDate !== today) {
         state.activeDate = today;
         var weekday = new Date().getDay();
-        state.activeRoutineId = state.schedule[weekday] || null;
+        state.partnerActiveRoutineId = state.partnerSchedule[weekday] || null;
       }
     }
 
@@ -10379,6 +10382,10 @@ Place this code in the empty space below. */
       messagingSenderId: "386076589128",
       appId: "1:386076589128:web:42a4a8475e672eaf33ac7d"
     };
+    // Same Firebase path as the main app on purpose — Firebase's security rules only allow this one
+    // exact path, so this "second person's log" lives as extra fields (partnerRoutines,
+    // partnerSessions, etc.) inside the same synced document rather than a path of its own. The
+    // page-restriction CSS above keeps this file from ever showing/touching Sophie's own fields.
     var FIREBASE_SYNC_PATH = 'ironLedger/3357c1571e094c61b17785c3d01f9191d80ddda50fd8428f';
     var fbRef = null;
     var fbReady = false;
@@ -10442,15 +10449,15 @@ Place this code in the empty space below. */
       fbRef.set(s).then(function () { setSyncStatus('☁ synced'); }).catch(function (writeErr) { reportSyncError('write', writeErr); });
     }
 
-    // ---- cross-view: reads your workout partner's fields (state.partnerSessions etc.), which ride
-    // along in this same synced document — never written by the main app, only displayed. Called
-    // from renderAll() below, same as every other render function.
-    var PARTNER_VIEW_LABEL = "Your partner's";
+    // ---- cross-view: reads Sophie's real exercise fields (state.partnerSessions etc.), which ride
+    // along in the same synced document — never written by this file, only displayed. Called from
+    // renderAll() below, same as every other render function. ----
+    var PARTNER_VIEW_LABEL = "Sophie's";
     function renderPartnerView() {
       var el = document.getElementById('partner-view');
       if (!el) return;
       var today = todayISO();
-      var sessions = Array.isArray(state.partnerSessions) ? state.partnerSessions : [];
+      var sessions = Array.isArray(state.sessions) ? state.sessions : [];
       var sess = sessions.filter(function (s) { return s.date === today; }).pop();
       if (!sess) { el.innerHTML = '<p class="empty-note">' + PARTNER_VIEW_LABEL + ' hasn\'t logged a workout today yet.</p>'; return; }
       var rows = (sess.exercises || []).map(function (ex) {
@@ -10651,7 +10658,7 @@ Place this code in the empty space below. */
     }
 
     /* ---- data helpers ---- */
-    function getRoutine(id) { return state.routines.find(function (r) { return r.id === id; }); }
+    function getRoutine(id) { return state.partnerRoutines.find(function (r) { return r.id === id; }); }
     function isExerciseDone(ex) {
       if (ex.type === 'cardio') return !!ex.done;
       return ex.sets && ex.sets.length > 0 && ex.sets.every(function (s) { return s.done; });
@@ -10679,7 +10686,7 @@ Place this code in the empty space below. */
     }
 
     function lastWeightForExercise(name) {
-      var sorted = state.sessions.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      var sorted = state.partnerSessions.slice().sort(function (a, b) { return a.date < b.date ? 1 : -1; });
       for (var i = 0; i < sorted.length; i++) {
         var ex = sorted[i].exercises.find(function (e) { return e.name === name && e.type === 'strength'; });
         if (ex && ex.sets && ex.sets.length) {
@@ -10701,10 +10708,10 @@ Place this code in the empty space below. */
       var routine = getRoutine(routineId);
       if (!routine) return null;
       var date = dateIso || todayISO();
-      var session = state.sessions.find(function (s) { return s.date === date && s.routineId === routineId; });
+      var session = state.partnerSessions.find(function (s) { return s.date === date && s.routineId === routineId; });
       if (!session) {
         session = { id: uid('s'), date: date, routineId: routineId, routineName: routine.name, finished: false, exercises: [] };
-        state.sessions.push(session);
+        state.partnerSessions.push(session);
       }
       routine.exercises.forEach(function (ex) {
         if (!ex.name) return; // don't freeze a placeholder row that hasn't been named yet
@@ -10723,7 +10730,7 @@ Place this code in the empty space below. */
     /* ---- stats ---- */
     function activeDatesSet() {
       var dates = new Set();
-      state.sessions.forEach(function (sess) {
+      state.partnerSessions.forEach(function (sess) {
         var any = sess.exercises.some(function (ex) {
           if (ex.type === 'cardio') return ex.done;
           return ex.sets && ex.sets.some(function (s) { return s.done; });
@@ -10794,7 +10801,7 @@ Place this code in the empty space below. */
     function weekStats() {
       var cutoff = new Set(); for (var i = 0; i < 7; i++) cutoff.add(isoDaysAgo(i));
       var sessionDates = new Set(); var volume = 0;
-      state.sessions.forEach(function (sess) {
+      state.partnerSessions.forEach(function (sess) {
         if (!cutoff.has(sess.date)) return;
         var any = false;
         sess.exercises.forEach(function (ex) {
@@ -10819,7 +10826,7 @@ Place this code in the empty space below. */
     }
     function topExercises(limit) {
       var dateSets = {};
-      state.sessions.forEach(function (sess) {
+      state.partnerSessions.forEach(function (sess) {
         sess.exercises.forEach(function (ex) {
           if (ex.type !== 'strength') return;
           if (!ex.sets.some(function (s) { return s.done; })) return;
@@ -10833,7 +10840,7 @@ Place this code in the empty space below. */
     }
     function seriesFor(name) {
       var byDate = {};
-      state.sessions.forEach(function (sess) {
+      state.partnerSessions.forEach(function (sess) {
         var ex = sess.exercises.find(function (e) { return e.name === name && e.type === 'strength'; });
         if (!ex) return;
         var best = bestSetOf(ex);
@@ -10923,11 +10930,11 @@ Place this code in the empty space below. */
     function renderSchedule() {
       var el = document.getElementById('schedule-grid');
       var todayWeekday = new Date().getDay();
-      var options = '<option value="">Rest</option>' + state.routines.map(function (r) {
+      var options = '<option value="">Rest</option>' + state.partnerRoutines.map(function (r) {
         return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>';
       }).join('');
       el.innerHTML = DAY_ORDER.map(function (day) {
-        var selected = state.schedule[day] || '';
+        var selected = state.partnerSchedule[day] || '';
         var isToday = day === todayWeekday;
         var opts = options.replace('value="' + selected + '"', 'value="' + selected + '" selected');
         return '<div class="schedule-cell' + (isToday ? ' is-today' : '') + '">' +
@@ -11088,24 +11095,24 @@ Place this code in the empty space below. */
 
     function renderRoutineChips() {
       var el = document.getElementById('routine-chips');
-      if (!state.routines.length) { el.innerHTML = ''; return; }
-      el.innerHTML = state.routines.map(function (r) {
-        return '<button type="button" class="routine-chip' + (r.id === state.activeRoutineId ? ' is-active' : '') + '" data-action="select-routine" data-id="' + r.id + '">' + escapeHtml(r.name) + '</button>';
+      if (!state.partnerRoutines.length) { el.innerHTML = ''; return; }
+      el.innerHTML = state.partnerRoutines.map(function (r) {
+        return '<button type="button" class="routine-chip' + (r.id === state.partnerActiveRoutineId ? ' is-active' : '') + '" data-action="select-routine" data-id="' + r.id + '">' + escapeHtml(r.name) + '</button>';
       }).join('');
     }
 
     function renderToday() {
       var el = document.getElementById('today-body');
-      if (!state.routines.length) {
+      if (!state.partnerRoutines.length) {
         el.innerHTML = '<p class="empty-note">No routines yet. Set one up below to start checking off workouts.</p>' +
           '<button type="button" class="ghost-btn empty-cta" data-action="new-routine">+ New routine</button>';
         return;
       }
-      if (!state.activeRoutineId || !getRoutine(state.activeRoutineId)) {
+      if (!state.partnerActiveRoutineId || !getRoutine(state.partnerActiveRoutineId)) {
         el.innerHTML = '<p class="empty-note">Pick a routine above to start today’s workout.</p>';
         return;
       }
-      var session = getOrSyncSession(state.activeRoutineId);
+      var session = getOrSyncSession(state.partnerActiveRoutineId);
       el.innerHTML = sessionBlockHTML(session, 'today');
     }
 
@@ -11113,7 +11120,7 @@ Place this code in the empty space below. */
       var sel = document.getElementById('past-workout-routine');
       var dateInput = document.getElementById('past-workout-date');
       if (!sel || !dateInput) return;
-      sel.innerHTML = state.routines.map(function (r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('');
+      sel.innerHTML = state.partnerRoutines.map(function (r) { return '<option value="' + r.id + '">' + escapeHtml(r.name) + '</option>'; }).join('');
       if (!dateInput.value) dateInput.value = isoDaysAgo(1);
     }
     function renderHistory() {
@@ -11126,7 +11133,7 @@ Place this code in the empty space below. */
       // to be excluded unconditionally while "active" (today's scheduled routine), which meant a
       // same-day check-off wouldn't show in the Ledger until the next day. Now it shows right away,
       // same as any other day, and simply keeps updating live as more gets crossed off.
-      var rest = state.sessions.filter(function (s) { return s.manualEntry || s.exercises.some(hasAnyProgress); });
+      var rest = state.partnerSessions.filter(function (s) { return s.manualEntry || s.exercises.some(hasAnyProgress); });
       if (!rest.length) {
         el.innerHTML = '<p class="empty-note">Nothing crossed off yet — logged workouts will show up here once you check off an exercise.</p>';
         return;
@@ -11218,18 +11225,18 @@ Place this code in the empty space below. */
 
     function exerciseOptionsHTML() {
       var names = new Set();
-      state.routines.forEach(function (r) { r.exercises.forEach(function (ex) { if (ex.name) names.add(ex.name); }); });
+      state.partnerRoutines.forEach(function (r) { r.exercises.forEach(function (ex) { if (ex.name) names.add(ex.name); }); });
       return Array.from(names).sort().map(function (n) { return '<option value="' + attr(n) + '">'; }).join('');
     }
 
     function renderRoutines() {
       var el = document.getElementById('routines-list');
-      if (!state.routines.length) {
+      if (!state.partnerRoutines.length) {
         el.innerHTML = '<p class="empty-note">No routines yet. Use "+ New routine" to build your first checklist (e.g. Push, Pull, Legs).</p>';
         return;
       }
       el.innerHTML = '<datalist id="exercise-name-options">' + exerciseOptionsHTML() + '</datalist>' +
-        state.routines.map(function (r) {
+        state.partnerRoutines.map(function (r) {
           var rows = r.exercises.map(function (ex, i) {
             return '<div class="rx-row">' +
               '<span class="rx-order"><button type="button" data-action="move-ex-up" data-routine="' + r.id + '" data-exercise="' + ex.id + '" aria-label="Move up">▲</button><button type="button" data-action="move-ex-down" data-routine="' + r.id + '" data-exercise="' + ex.id + '" aria-label="Move down">▼</button></span>' +
@@ -11340,7 +11347,7 @@ Place this code in the empty space below. */
        strength: ~5 cal per completed set. Not a substitute for a real HR-based estimate. */
     function computeExerciseCaloriesForDate(dateISO) {
       var total = 0;
-      (state.sessions || []).forEach(function (sess) {
+      (state.partnerSessions || []).forEach(function (sess) {
         if (sess.date !== dateISO) return;
         (sess.exercises || []).forEach(function (ex) {
           if (ex.type === 'cardio') {
@@ -13153,7 +13160,7 @@ Place this code in the empty space below. */
     }
 
     /* ---- lookups used by handlers ---- */
-    function findSession(id) { return state.sessions.find(function (s) { return s.id === id; }); }
+    function findSession(id) { return state.partnerSessions.find(function (s) { return s.id === id; }); }
     function findExInSession(session, exId) { return session.exercises.find(function (e) { return e.exerciseId === exId; }); }
     function findRoutineExercise(routine, exId) { return routine.exercises.find(function (e) { return e.id === exId; }); }
 
@@ -13167,7 +13174,7 @@ Place this code in the empty space below. */
         var toKg = state.unit === 'lb';
         var wFactor = toKg ? (1 / 2.20462) : 2.20462;
         var dFactor = toKg ? 1.60934 : (1 / 1.60934);
-        state.sessions.forEach(function (sess) {
+        state.partnerSessions.forEach(function (sess) {
           sess.exercises.forEach(function (ex) {
             if (ex.type === 'strength') ex.sets.forEach(function (s) { if (s.weight !== '') s.weight = Math.round(s.weight * wFactor * 2) / 2; });
             if (ex.type === 'cardio' && ex.distance !== '') ex.distance = Math.round(ex.distance * dFactor * 100) / 100;
@@ -13177,30 +13184,30 @@ Place this code in the empty space below. */
         renderAll(); scheduleSave();
 
       } else if (action === 'select-routine') {
-        state.activeRoutineId = btn.getAttribute('data-id');
+        state.partnerActiveRoutineId = btn.getAttribute('data-id');
         stopRestTimer();
         renderAll(); scheduleSave();
 
       } else if (action === 'new-routine') {
         var r = { id: uid('r'), name: 'New Routine', exercises: [] };
-        state.routines.push(r);
+        state.partnerRoutines.push(r);
         document.getElementById('routines-details').open = true;
         pendingFocus = 'routine-name-' + r.id;
         renderAll(); scheduleSave();
 
       } else if (action === 'delete-routine') {
         var rid = btn.getAttribute('data-routine');
-        var ridx = state.routines.findIndex(function (x) { return x.id === rid; });
+        var ridx = state.partnerRoutines.findIndex(function (x) { return x.id === rid; });
         if (ridx > -1) {
-          var removedR = state.routines.splice(ridx, 1)[0];
-          if (state.activeRoutineId === rid) state.activeRoutineId = null;
+          var removedR = state.partnerRoutines.splice(ridx, 1)[0];
+          if (state.partnerActiveRoutineId === rid) state.partnerActiveRoutineId = null;
           var removedScheduleDays = [];
-          state.schedule.forEach(function (routineId, day) { if (routineId === rid) removedScheduleDays.push(day); });
-          removedScheduleDays.forEach(function (day) { state.schedule[day] = null; });
+          state.partnerSchedule.forEach(function (routineId, day) { if (routineId === rid) removedScheduleDays.push(day); });
+          removedScheduleDays.forEach(function (day) { state.partnerSchedule[day] = null; });
           renderAll(); scheduleSave();
           showUndoToast('Deleted "' + removedR.name + '".', function () {
-            state.routines.splice(ridx, 0, removedR);
-            removedScheduleDays.forEach(function (day) { state.schedule[day] = rid; });
+            state.partnerRoutines.splice(ridx, 0, removedR);
+            removedScheduleDays.forEach(function (day) { state.partnerSchedule[day] = rid; });
             renderAll(); scheduleSave();
           });
         }
@@ -13352,12 +13359,12 @@ Place this code in the empty space below. */
 
       } else if (action === 'delete-session') {
         var sid = btn.getAttribute('data-session');
-        var sidx = state.sessions.findIndex(function (x) { return x.id === sid; });
+        var sidx = state.partnerSessions.findIndex(function (x) { return x.id === sid; });
         if (sidx > -1) {
-          var removedS = state.sessions.splice(sidx, 1)[0];
+          var removedS = state.partnerSessions.splice(sidx, 1)[0];
           renderAll(); scheduleSave();
           showUndoToast('Removed ' + removedS.routineName + ' — ' + formatHeading(removedS.date) + '.', function () {
-            state.sessions.splice(sidx, 0, removedS);
+            state.partnerSessions.splice(sidx, 0, removedS);
             renderAll(); scheduleSave();
           });
         }
@@ -13823,8 +13830,8 @@ Place this code in the empty space below. */
       } else if (t.getAttribute('data-input') === 'schedule-day') {
         var day = Number(t.getAttribute('data-day'));
         var newRoutineId = t.value || null;
-        state.schedule[day] = newRoutineId;
-        if (day === new Date().getDay()) state.activeRoutineId = newRoutineId;
+        state.partnerSchedule[day] = newRoutineId;
+        if (day === new Date().getDay()) state.partnerActiveRoutineId = newRoutineId;
         renderAll(); scheduleSave();
 
       } else if (t.getAttribute('data-input') === 'measure-metric') {
