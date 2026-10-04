@@ -10449,7 +10449,7 @@ Place this code in the empty space below. */
       fbRef.set(s).then(function () { setSyncStatus('☁ synced'); }).catch(function (writeErr) { reportSyncError('write', writeErr); });
     }
 
-    // ---- cross-view: reads Sophie's real exercise fields (state.partnerSessions etc.), which ride
+    // ---- cross-view: reads Sophie's real exercise fields (state.sessions etc.), which ride
     // along in the same synced document — never written by this file, only displayed. Called from
     // renderAll() below, same as every other render function. ----
     var PARTNER_VIEW_LABEL = "Your favorite sister";
@@ -10459,7 +10459,17 @@ Place this code in the empty space below. */
       var today = todayISO();
       var sessions = Array.isArray(state.sessions) ? state.sessions : [];
       var sess = sessions.filter(function (s) { return s.date === today; }).pop();
-      if (!sess) { el.innerHTML = '<p class="empty-note">' + PARTNER_VIEW_LABEL + ' hasn\'t logged a workout today yet.</p>'; return; }
+      if (!sess) {
+        // Nothing started yet today — fall back to what's scheduled on her Weekly Schedule, so
+        // you know what's planned even before she's checked anything off.
+        var weekday = new Date().getDay();
+        var scheduledId = (state.schedule || [])[weekday];
+        var scheduledRoutine = scheduledId ? (state.routines || []).find(function (r) { return r.id === scheduledId; }) : null;
+        el.innerHTML = scheduledRoutine
+          ? '<p class="empty-note">' + escapeHtml(PARTNER_VIEW_LABEL) + '’s scheduled workout today: <strong>' + escapeHtml(scheduledRoutine.name) + '</strong> — not started yet.</p>'
+          : '<p class="empty-note">' + escapeHtml(PARTNER_VIEW_LABEL) + ' has a rest day today (or hasn\'t set a schedule yet).</p>';
+        return;
+      }
       var rows = (sess.exercises || []).map(function (ex) {
         var done, detail;
         if (ex.type === 'cardio') {
