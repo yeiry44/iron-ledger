@@ -10437,6 +10437,16 @@ Place this code in the empty space below. */
           if (!fbReady || fbApplyingRemote) return;
           try { applyRemoteState(snap.val()); } catch (applyErr) { reportSyncError('applying live remote update', applyErr); }
         });
+        // Mobile browsers throttle/pause the live listener above while the tab or PWA is
+        // backgrounded — reopening it can otherwise show whatever was on screen when it was last
+        // backgrounded (e.g. a past week she'd navigated to) until the stalled listener happens to
+        // fire. Force a fresh read as soon as she's looking at it again so it's never stale.
+        document.addEventListener('visibilitychange', function () {
+          if (document.visibilityState !== 'visible' || !fbRef) return;
+          fbRef.once('value').then(function (snap) {
+            try { applyRemoteState(snap.val()); } catch (applyErr) { reportSyncError('applying refreshed remote state', applyErr); }
+          }).catch(function (readErr) { reportSyncError('refresh on visible', readErr); });
+        });
       }
     } catch (fbErr) { reportSyncError('init', fbErr); }
     function saveFirebase(s) {
@@ -10972,7 +10982,7 @@ Place this code in the empty space below. */
       if (pct < 75) return "Over halfway — you're doing amazing ✨";
       return "So close — finish strong 💪";
     }
-    function renderGoalsScore(wk) {
+    function renderGoalsScore(wk, isLoadingWeek) {
       var res = computeGoalsScore(wk);
       var pct = res.applicable > 0 ? Math.round((res.done / res.applicable) * 100) : 0;
       var isFull = res.applicable > 0 && res.done === res.applicable;
@@ -10980,7 +10990,7 @@ Place this code in the empty space below. */
       document.getElementById('goals-score-value').classList.toggle('is-full', isFull);
       document.getElementById('goals-score-fill').style.width = pct + '%';
       document.getElementById('goals-score-fill').classList.toggle('is-full', isFull);
-      document.getElementById('goals-score-caption').textContent = goalsCaption(pct, isFull);
+      document.getElementById('goals-score-caption').textContent = isLoadingWeek ? 'Loading your data…' : goalsCaption(pct, isFull);
     }
     var TAGLINES = [
       "You're doing amazing, keep glowing ✨",
@@ -11029,6 +11039,12 @@ Place this code in the empty space below. */
     }
     var goalsMobileDay = null; // ephemeral UI state — which day the mobile day-at-a-time view shows, defaults to today
     function renderGoals() {
+      var ws = goalsViewWeekStart || currentWeekStart();
+      // A week with no local record yet is ambiguous before the first Firebase read finishes: it
+      // might genuinely have nothing logged, or her real data for it just hasn't arrived from sync
+      // yet (e.g. right after opening the page, or waking a backgrounded tab). Showing "Fresh
+      // start" in that window looked like past data had gone missing — so say so plainly instead.
+      var isLoadingWeek = !fbReady && !getGoalWeek(ws);
       var wk = goalWeekForView();
       var isCurrentWeek = wk.weekStart === currentWeekStart();
       var monday = parseLocalISO(wk.weekStart);
@@ -11036,7 +11052,9 @@ Place this code in the empty space below. */
       document.getElementById('goals-week-range').textContent =
         monday.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' – ' + sunday.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) +
         (isCurrentWeek ? ' (this week)' : '');
-      document.getElementById('goals-tagline').textContent = isCurrentWeek ? TAGLINES[dayOfYear(new Date()) % TAGLINES.length] : 'Browsing a past week — edits here still save.';
+      document.getElementById('goals-tagline').textContent = isLoadingWeek
+        ? 'Loading your data…'
+        : (isCurrentWeek ? TAGLINES[dayOfYear(new Date()) % TAGLINES.length] : 'Browsing a past week — edits here still save.');
       var nextBtn = document.getElementById('goals-next-week-btn');
       if (nextBtn) nextBtn.disabled = isCurrentWeek;
       var backBtn = document.getElementById('goals-back-to-current');
@@ -11096,7 +11114,7 @@ Place this code in the empty space below. */
         mobileEl.innerHTML = '<div class="goals-mobile-tabs">' + dayTabs + '</div><div class="goals-mobile-rows">' + (dayRows || '<p class="empty-note">Nothing scheduled for this day.</p>') + '</div>';
       }
 
-      renderGoalsScore(wk);
+      renderGoalsScore(wk, isLoadingWeek);
     }
 
     function renderRoutineChips() {
