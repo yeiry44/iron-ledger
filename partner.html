@@ -161,6 +161,8 @@
   .set-row.is-done input{ background:var(--good-soft); border-color:var(--good); }
   .set-num{ font-size:12px; color:var(--ink-dim); }
   .set-x{ text-align:center; color:var(--ink-dim); font-family:var(--font-mono); }
+  .set-rows-header{ margin-bottom:2px; }
+  .set-rows-header span{ font-family:var(--font-mono); font-size:9.5px; letter-spacing:.5px; text-transform:uppercase; color:var(--ink-dim); text-align:center; }
   .set-row input{ font-family:var(--font-body); font-size:14px; color:var(--ink); background:var(--surface-2); border:1px solid var(--line); border-radius:4px; padding:7px 8px; width:100%; }
   .set-check{ width:32px; height:32px; border-radius:999px; border:2px solid var(--line); background:var(--surface); color:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; font-weight:700; }
   .set-check:hover{ border-color:var(--good); }
@@ -10888,11 +10890,12 @@ Place this code in the empty space below. */
           (ex.sets.length > 1 ? '<button type="button" class="set-remove" data-action="remove-set" data-session="' + session.id + '" data-exercise="' + ex.exerciseId + '" data-set="' + i + '" aria-label="Remove set">×</button>' : '<span></span>') +
           '</div>';
       }).join('');
+      var setRowsHeader = '<div class="set-row set-rows-header"><span></span><span>Reps</span><span></span><span>Weight (' + state.unit + ')</span><span></span><span></span></div>';
       return '<div class="ex-block' + (done ? ' is-done' : '') + '">' +
         '<div class="ex-head"><span class="ex-icon">' + iconSVG(ex.name, ex.type) + '</span><span class="ex-name">' + escapeHtml(ex.name) + '</span>' +
         '<span class="ex-target num">' + ex.sets.length + ' × ' + escapeHtml(ex.targetReps || '—') + '</span>' +
         (done ? '<span class="done-check">✓</span>' : '') + '</div>' +
-        '<div class="set-rows">' + setsHtml + '</div>' +
+        '<div class="set-rows">' + setRowsHeader + setsHtml + '</div>' +
         '<button type="button" class="add-set-btn" data-action="add-set" data-session="' + session.id + '" data-exercise="' + ex.exerciseId + '">+ Add set</button>' +
         '<input type="text" class="ex-note" maxlength="140" placeholder="Note (optional)" data-input="exercise-note" data-session="' + session.id + '" data-exercise="' + ex.exerciseId + '" value="' + attr(ex.note) + '">' +
         '</div>';
