@@ -998,7 +998,7 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
           </div>
           <button type="submit" class="ghost-btn">+ Add to wishlist</button>
         </form>
-        <p class="goals-footnote" style="margin:8px 0 0;">Click "✎ Edit details" on any trip card below to update it, including the fields above.</p>
+        <p class="goals-footnote" style="margin:8px 0 0;">Every trip card below is editable right on the card — just tap a field and type.</p>
         <div id="travel-board"></div>
       </section>
     </div>
@@ -12081,7 +12081,7 @@ Place this code in the empty space below. */
     function travelItineraryHTML(t) {
       var days = tripDayList(t);
       if (!days.length) {
-        return '<p class="goals-footnote" style="margin-top:8px;">Add a trip start date above (✎ Edit details) to build a day-by-day, hour-by-hour itinerary here.</p>';
+        return '<p class="goals-footnote" style="margin-top:8px;">Add a trip start date above to build a day-by-day, hour-by-hour itinerary here.</p>';
       }
       var selDay = (travelItineraryDay[t.id] && days.indexOf(travelItineraryDay[t.id]) > -1) ? travelItineraryDay[t.id] : days[0];
       var dayTabs = days.map(function (d, i) {
@@ -12189,7 +12189,7 @@ Place this code in the empty space below. */
       }).join('');
       var cur = t.currency || {};
       var budget = '<div class="trip-budget-summary" data-trip="' + t.id + '">' + tripBudgetSummaryHTML(t) + '</div>' +
-        (spendRows || '<p class="goals-footnote">Log what you spend (flights, stay, food…) in USD. The estimate comes from “Est. budget” under ✎ Edit details.</p>') +
+        (spendRows || '<p class="goals-footnote">Log what you spend (flights, stay, food…) in USD. The estimate comes from “Est. budget”.</p>') +
         tripAddForm(t, 'spending', 'What did you spend on? (e.g. Flights)') +
         '<div class="trip-currency"><span>Local currency</span>' +
         '<input type="text" maxlength="5" placeholder="JMD" data-input="trip-currency-code" data-id="' + t.id + '" value="' + attr(cur.code || '') + '" class="trip-cur-code">' +
@@ -12205,11 +12205,10 @@ Place this code in the empty space below. */
     var beautySearchQuery = ''; // ephemeral UI state — local filter text for curated picks; not persisted
     var beautyFormRating = 0; // ephemeral UI state — star rating picked in the add-product form before submit; not persisted
     function travelCardHTML(t, colId) {
-      var isEditing = !!travelEditIds[t.id];
+      var isEditing = true; // details are always editable inline — no separate edit mode
       var actions = '';
       if (colId === 'wishlist') actions += '<button type="button" data-action="travel-status" data-id="' + t.id + '" data-status="planned">Mark planned</button>';
       if (colId === 'planned') actions += '<button type="button" data-action="travel-status" data-id="' + t.id + '" data-status="visited">Mark visited</button>';
-      actions += '<button type="button" data-action="toggle-travel-edit" data-id="' + t.id + '">' + (isEditing ? 'Done editing ✓' : '✎ Edit details') + '</button>';
       actions += '<button type="button" data-action="remove-travel" data-id="' + t.id + '">Remove</button>';
       var itinerary = colId === 'visited'
         ? '<div class="travel-card-notes"><textarea rows="2" placeholder="Save what you did / itinerary notes" data-input="travel-itinerary" data-id="' + t.id + '">' + escapeHtml(t.itinerary || '') + '</textarea></div>'
@@ -12264,8 +12263,8 @@ Place this code in the empty space below. */
           emailBlock +
           '</details>'
         : (isEditing ? emailBlock : '');
-      var dayPlanBlock = (colId === 'planned' && !isEditing) ? travelItineraryHTML(t) + travelToolkitHTML(t) : '';
-      return '<div class="travel-card' + (isEditing ? ' is-editing' : '') + '">' + mainBlock +
+      var dayPlanBlock = (colId === 'planned') ? travelItineraryHTML(t) + travelToolkitHTML(t) : '';
+      return '<div class="travel-card' + (isEditing ? ' is-editing' : '') + '">' + (colId === 'planned' ? (function () { var p = tripCountdownPill(t); return p ? '<div class="travel-card-meta">' + p + '</div>' : ''; })() : '') + mainBlock +
         itinerary + detailsBlock + dayPlanBlock +
         '<div class="travel-card-actions">' + actions + '</div></div>';
     }
