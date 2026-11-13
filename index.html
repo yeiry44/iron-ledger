@@ -12950,7 +12950,10 @@ Place this code in the empty space below. */
       var series = '<div class="trip-currency"><span>Series</span><input type="text" class="shelf-series-input" placeholder="e.g. Fourth Wing" maxlength="50" data-input="hub-field" data-list="' + listName + '" data-item="' + b.id + '" data-field="seriesName" value="' + attr(b.seriesName || '') + '"><span>#</span><input type="text" class="trip-amt" style="width:52px;" maxlength="4" data-input="hub-field" data-list="' + listName + '" data-item="' + b.id + '" data-field="seriesNum" value="' + attr(b.seriesNum || '') + '"></div>';
       return '<details class="shelf-card trip-sec" data-sec="' + attr(key) + '"' + (travelSecOpen[key] ? ' open' : '') + ' data-hub-row="' + b.id + '"><summary>' + shelfThumb(b, i) +
         '<span class="shelf-main"><span class="shelf-title">' + escapeHtml(b.title) + '</span><span class="shelf-by">' + (b.author ? 'by ' + escapeHtml(b.author) : '&nbsp;') + '</span>' + shelfSeriesBadge(b) + '</span>' + side + '</summary>' +
-        '<div class="shelf-body">' + body + series + shelfNotesHTML(b) + '<div class="shelf-remove">' + remove + '</div></div></details>';
+        '<div class="shelf-body">' + body + series + shelfNotesHTML(b) +
+        '<div class="trip-currency"><span>Move to</span>' + [['reading', '📖 Reading'], ['toread', '🔖 To read'], ['finished', '✅ Finished']].filter(function (m) { return m[0] !== status; }).map(function (m) {
+          return '<button type="button" class="hub-btn" style="margin-left:0;" data-action="shelf-move" data-from="' + listName + '" data-item="' + b.id + '" data-to="' + m[0] + '">' + m[1] + '</button>';
+        }).join('') + '</div><div class="shelf-remove">' + remove + '</div></div></details>';
     }
     function shelfSeriesHTML() {
       var all = [];
@@ -14184,6 +14187,24 @@ Place this code in the empty space below. */
       } else if (action === 'look-del') {
         state.beautyLooks = state.beautyLooks.filter(function (x) { return x.id !== btn.getAttribute('data-look'); });
         renderBeautyLooks(); scheduleSave();
+
+      } else if (action === 'shelf-move') {
+        var mvList = state[btn.getAttribute('data-from')];
+        var mvIdx = Array.isArray(mvList) ? mvList.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); }) : -1;
+        var mvTo = btn.getAttribute('data-to');
+        if (mvIdx > -1) {
+          var mv = mvList.splice(mvIdx, 1)[0];
+          var common = { title: mv.title, author: mv.author || '', seriesName: mv.seriesName || '', seriesNum: mv.seriesNum || '', coverId: mv.coverId || null };
+          if (mvTo === 'finished') {
+            state.books.push(Object.assign({ id: uid('bk'), genre: mv.genre || '', usState: mv.usState || '', country: mv.country || '', monthRead: mv.monthRead || todayISO().slice(0, 7), synopsis: mv.synopsis || '', rating: Number(mv.rating) || 0, dateAdded: todayISO() }, common));
+          } else if (mvTo === 'reading') {
+            state.currentlyReading.push(Object.assign({ id: uid('cr'), totalPages: Number(mv.totalPages) || 0, pagesRead: Number(mv.pagesRead) || 0, started: todayISO() }, common));
+          } else {
+            state.toRead.push(Object.assign({ id: uid('tr') }, common));
+          }
+          shelfTab = mvTo === 'toread' ? 'toread' : mvTo;
+          renderAll(); scheduleSave();
+        }
 
       } else if (action === 'shelf-tab') {
         shelfTab = btn.getAttribute('data-tab'); renderReadingHub();
