@@ -14873,8 +14873,7 @@ Place this code in the empty space below. */
       }, true);
     }
 
-    renderAll();
-    checkHabitReminders();
+    /* ---- collapsible panels: each .panel becomes a click-to-collapse box. Panel shells are
        static HTML (only inner IDs get re-rendered), so this runs once and the DOM restructuring
        it does survives every later renderAll(). Collapse state persists per-device in
        localStorage, keyed by page + heading text since panels don't all have stable ids. ---- */
@@ -14922,6 +14921,7 @@ Place this code in the empty space below. */
 
     /* ---- init ---- */
     renderAll();
+    checkHabitReminders();
     initCollapsiblePanels();
     initScheduleDrag();
   })();
