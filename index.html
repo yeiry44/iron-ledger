@@ -533,7 +533,7 @@
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
   .travel-card details input, .travel-card details textarea, .travel-card details select,
   .hub-sec input, .hub-sec textarea, .hub-sec select{ background:transparent !important; }
-  .cal-cell{ display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; aspect-ratio:1; min-height:44px; border:1px solid var(--line); border-radius:10px; background:color-mix(in srgb, var(--accent) calc(var(--p, 0%) * .6), var(--surface)); color:var(--ink); font-size:12.5px; padding:5px 0 0; cursor:pointer; }
+  .cal-cell{ display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; aspect-ratio:1 / 1.1; min-height:0; min-width:0; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:color-mix(in srgb, var(--accent) calc(var(--p, 0%) * .6), var(--surface)); color:var(--ink); font-size:12.5px; padding:5px 0 0; cursor:pointer; }
   .cal-cell.is-today{ outline:2px solid var(--accent); outline-offset:1px; }
   .cal-cell.is-selected{ border-color:var(--ink); border-width:2px; }
   .cal-cell.has-trip{ box-shadow:inset 0 0 0 2px var(--good); }
@@ -609,7 +609,7 @@
   .chal-label{ width:120px; font-size:12.5px; color:var(--ink); flex:none; }
   .chal-track{ flex:1; }
   .chal-count{ font-size:12px; color:var(--ink-dim); width:36px; text-align:right; }
-  .gm-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .gm-grid{ display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; }
   .gm-head{ text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--ink-dim); }
   .gm-cell{ display:flex; flex-direction:column; align-items:center; justify-content:center; aspect-ratio:1; min-height:38px; border:1px solid var(--line); border-radius:8px; cursor:pointer; font-size:12px; color:var(--ink); padding:0;
     background:color-mix(in srgb, var(--accent) var(--p,0%), var(--surface)); }
@@ -11952,7 +11952,7 @@ Place this code in the empty space below. */
       var weekday = parseLocalISO(dateIso).getDay(), monthKey = dateIso.slice(0, 7), today = todayISO();
       state.calendarEvents.forEach(function (c) {
         if (c.date === dateIso || (!c.date && c.weekdays.indexOf(weekday) !== -1 && (!c.month || c.month === monthKey))) {
-          items.push({ type: 'events', icon: '📅', label: c.title, time: c.startTime || '', id: c.id, removable: true, sort: c.startTime || '99:99' });
+          items.push({ type: 'events', icon: '📅', label: c.title, time: c.startTime || '', id: c.id, removable: !!c.date, repeats: !c.date, sort: c.startTime || '99:99' });
         }
       });
       state.bucketList.forEach(function (b) {
@@ -12011,7 +12011,7 @@ Place this code in the empty space below. */
       var agendaHTML = '<h3 class="cal-agenda-title">' + escapeHtml(selDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })) + '</h3>' +
         (agenda.map(function (it) {
           return '<div class="cal-agenda-row' + (it.planned ? ' is-planned' : '') + (it.status === 'visited' ? ' is-planned' : '') + '"><span class="cal-agenda-time num">' + escapeHtml(calTimeLabel(it.time)) + '</span><span>' + it.icon + ' ' + escapeHtml(it.label) + '</span>' +
-            (it.removable ? '<button type="button" class="trip-del" data-action="cal-del-event" data-id="' + it.id + '" aria-label="Remove">×</button>' : '') + '</div>';
+            (it.repeats ? "<span class=\"goals-footnote\" style=\"margin:0;\">repeats</span>" : "") + (it.removable ? '<button type="button" class="trip-del" data-action="cal-del-event" data-id="' + it.id + '" aria-label="Remove">×</button>' : '') + '</div>';
         }).join('') || '<p class="goals-footnote">Nothing on this day.</p>') +
         hubAddForm('calevent', '<input type="text" name="title" placeholder="Add an event" maxlength="60"><input type="time" name="time" class="trip-amt" style="width:120px;">', '+ Add');
       var legend = '<p class="goals-footnote" style="margin:10px 0 0;"><i class="cal-dot cal-events"></i> events &nbsp; <i class="cal-dot cal-workouts"></i> workout &nbsp; <i class="cal-dot cal-workouts is-planned"></i> scheduled &nbsp; <i class="cal-dot cal-sister"></i> sister &nbsp; green outline = trip &nbsp; shading = habits done</p>';
