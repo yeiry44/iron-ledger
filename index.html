@@ -522,6 +522,25 @@
   .travel-itinerary-hours{ max-height:340px; overflow-y:auto; padding-right:2px; }
   .travel-email-item{ margin:0; padding:3px 0; font-size:12px; color:var(--ink); line-height:1.5; }
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
+  .trip-toolkit{ margin-top:4px; }
+  .trip-sec-meta{ color:var(--accent); margin-left:4px; }
+  .trip-check-row{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .trip-check-row.is-done .trip-item-text{ text-decoration:line-through; color:var(--ink-dim); }
+  .trip-item-text{ flex:1; min-width:0; font-family:var(--font-body); font-size:12.5px; color:var(--ink); background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; }
+  .trip-amt{ width:84px; font-family:var(--font-mono); font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); }
+  .trip-cur-code{ width:58px; font-family:var(--font-mono); font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); text-transform:uppercase; }
+  .trip-del{ background:none; border:none; color:var(--ink-dim); font-size:16px; cursor:pointer; padding:0 4px; }
+  .trip-add-form{ display:flex; gap:5px; margin-top:6px; flex-wrap:wrap; }
+  .trip-add-form input[type=text]{ flex:1; min-width:120px; font-size:12.5px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); }
+  .trip-add-form select{ font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; color:var(--ink); }
+  .trip-add-form button, .trip-sec-actions button{ font-family:var(--font-mono); font-size:10.5px; background:none; border:1px dashed var(--line); border-radius:999px; padding:4px 10px; color:var(--ink-dim); cursor:pointer; }
+  .trip-sec-actions{ display:flex; gap:6px; flex-wrap:wrap; margin-top:6px; }
+  .trip-flight{ margin-bottom:8px; }
+  .trip-flight-head{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
+  .trip-budget-summary{ font-size:12.5px; margin-bottom:8px; }
+  .trip-over{ color:#b3261e; }
+  .trip-currency{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim); }
+  .travel-countdown{ font-weight:600; }
   .travel-card-actions{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .travel-card-actions button{ font-family:var(--font-mono); font-size:10.5px; background:none; border:1px dashed var(--line); border-radius:999px; padding:4px 10px; color:var(--ink-dim); cursor:pointer; }
   .travel-card-meta{ display:flex; gap:6px; flex-wrap:wrap; margin-top:5px; }
@@ -10070,7 +10089,19 @@ Place this code in the empty space below. */
       if (trv.startDate === undefined) trv.startDate = null;
       if (trv.endDate === undefined) trv.endDate = null;
       if (!trv.dailyPlan || typeof trv.dailyPlan !== 'object') trv.dailyPlan = {};
+      // Trip toolkit (booking checklist, packing list, flight/stay details, spending, currency) —
+      // all user-editable, shown on planned trips only
+      ['bookingItems', 'packingList', 'flights', 'spending'].forEach(function (k) { if (!Array.isArray(trv[k])) trv[k] = []; });
+      if (!trv.currency || typeof trv.currency !== 'object') trv.currency = { code: '', rate: null };
     });
+    // Her "usual" starting lists for a new trip — editable via "Save as my usual list" on a trip
+    if (!state.tripTemplates || typeof state.tripTemplates !== 'object') state.tripTemplates = {};
+    if (!Array.isArray(state.tripTemplates.packingList) || !state.tripTemplates.packingList.length) {
+      state.tripTemplates.packingList = ['Passport', 'Phone + charger', 'Power adapter', 'Mosquito repellent / bug spray', 'Sunscreen', 'Light, comfortable clothing', 'Swimsuit', 'Comfortable walking shoes', 'Toiletries', 'Medications', 'Travel insurance info', 'Cash + cards', 'Reusable water bottle'];
+    }
+    if (!Array.isArray(state.tripTemplates.bookingItems) || !state.tripTemplates.bookingItems.length) {
+      state.tripTemplates.bookingItems = ['Book flights', 'Book hotel / Airbnb', 'Research transportation (drivers / rideshare)', 'Research excursions', 'Travel insurance', 'Check passport expiry'];
+    }
     if (!Array.isArray(state.beautyProducts)) state.beautyProducts = [];
     if (!Array.isArray(state.books)) state.books = [];
     state.books.forEach(function (bk) {
@@ -12070,6 +12101,107 @@ Place this code in the empty space below. */
         '<div class="travel-itinerary-hours">' + rows + '</div>' +
         '</details>';
     }
+    var travelSecOpen = {}; // ephemeral UI state — which toolkit sections are expanded, keyed "tripId|section"
+    function parseMoney(s) { var m = String(s == null ? '' : s).replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? parseFloat(m[0]) : null; }
+    function tripCountdownPill(t) {
+      if (!t.startDate) return '';
+      var toStart = daysBetween(todayISO(), t.startDate);
+      if (toStart === null) return '';
+      var txt;
+      if (toStart > 1) txt = toStart + ' days to go';
+      else if (toStart === 1) txt = 'Tomorrow!';
+      else if (toStart === 0) txt = 'Today!';
+      else {
+        var toEnd = t.endDate ? daysBetween(todayISO(), t.endDate) : 0;
+        if (toEnd !== null && toEnd >= 0) txt = 'Trip in progress';
+        else return '';
+      }
+      return '<span class="travel-meta-pill travel-countdown">⏳ ' + txt + '</span>';
+    }
+    function tripBudgetSummaryHTML(t) {
+      var est = parseMoney(t.budget);
+      var spent = (t.spending || []).reduce(function (s, x) { return s + (Number(x.amount) || 0); }, 0);
+      var parts = ['Spent <strong>$' + fmtNum(spent) + '</strong>'];
+      if (est !== null) {
+        var left = est - spent;
+        parts[0] += ' of $' + fmtNum(est);
+        parts.push(left >= 0 ? '$' + fmtNum(left) + ' left' : '<span class="trip-over">$' + fmtNum(-left) + ' over</span>');
+      }
+      var rate = Number(t.currency && t.currency.rate);
+      if (rate > 0 && t.currency.code) parts.push('≈ ' + fmtNum(Math.round(spent * rate)) + ' ' + escapeHtml(t.currency.code));
+      return parts.join(' · ');
+    }
+    function tripConvertText(t, localAmt) {
+      var rate = Number(t.currency && t.currency.rate);
+      var n = Number(localAmt);
+      if (!(rate > 0) || !(n >= 0) || localAmt === '') return '';
+      return '= $' + (Math.round(n / rate * 100) / 100).toLocaleString();
+    }
+    function tripSection(t, key, title, meta, body) {
+      var k = t.id + '|' + key;
+      return '<details class="travel-itinerary trip-sec" data-sec="' + k + '"' + (travelSecOpen[k] ? ' open' : '') + '>' +
+        '<summary>' + title + (meta ? ' <span class="trip-sec-meta">' + meta + '</span>' : '') + '</summary>' + body + '</details>';
+    }
+    function tripAddForm(t, list, placeholder, extra) {
+      return '<form class="trip-add-form" id="tripadd-' + t.id + '-' + list + '" data-trip-form="1" data-id="' + t.id + '" data-list="' + list + '">' + (extra || '') +
+        '<input type="text" name="text" placeholder="' + attr(placeholder) + '" maxlength="80">' +
+        (list === 'spending' ? '<input type="number" name="amount" min="0" step="any" inputmode="decimal" placeholder="$" class="trip-amt">' : '') +
+        '<button type="submit">Add</button></form>';
+    }
+    function tripChecklistHTML(t, list, placeholder, emptyButtons) {
+      var items = t[list];
+      var rows = items.map(function (it) {
+        return '<div class="trip-check-row' + (it.done ? ' is-done' : '') + '">' +
+          '<input type="checkbox" data-input="trip-item-check" data-id="' + t.id + '" data-list="' + list + '" data-item="' + it.id + '"' + (it.done ? ' checked' : '') + ' aria-label="Done">' +
+          '<input type="text" class="trip-item-text" data-input="trip-item-field" data-field="text" data-id="' + t.id + '" data-list="' + list + '" data-item="' + it.id + '" value="' + attr(it.text) + '" maxlength="80">' +
+          '<button type="button" class="trip-del" data-action="trip-item-del" data-id="' + t.id + '" data-list="' + list + '" data-item="' + it.id + '" aria-label="Delete">×</button></div>';
+      }).join('');
+      return (rows || '<p class="goals-footnote">Nothing here yet.</p>') + tripAddForm(t, list, placeholder) +
+        '<div class="trip-sec-actions">' + emptyButtons(items.length) + '</div>';
+    }
+    function travelToolkitHTML(t) {
+      var bookDone = t.bookingItems.filter(function (x) { return x.done; }).length;
+      var packDone = t.packingList.filter(function (x) { return x.done; }).length;
+      var booking = tripChecklistHTML(t, 'bookingItems', 'Add a to-do (e.g. Book airbnb)', function (n) {
+        var b = '';
+        if (!n) b += '<button type="button" data-action="trip-seed" data-list="bookingItems" data-id="' + t.id + '">Start from my usual list</button>';
+        if (!n && t.notes) b += '<button type="button" data-action="trip-from-notes" data-id="' + t.id + '">Turn my trip notes into a checklist</button>';
+        return b;
+      });
+      var packing = tripChecklistHTML(t, 'packingList', 'Add an item (e.g. Rain jacket)', function (n) {
+        return (!n ? '<button type="button" data-action="trip-seed" data-list="packingList" data-id="' + t.id + '">Start from my usual list</button>' : '') +
+          (n ? '<button type="button" data-action="trip-save-template" data-list="packingList" data-id="' + t.id + '">Save as my usual list</button>' : '');
+      });
+      var flights = t.flights.map(function (it) {
+        return '<div class="trip-flight">' +
+          '<div class="trip-flight-head"><span>' + (it.kind === 'stay' ? '🏨' : '✈️') + '</span>' +
+          '<input type="text" class="trip-item-text" data-input="trip-item-field" data-field="text" data-id="' + t.id + '" data-list="flights" data-item="' + it.id + '" value="' + attr(it.text) + '" maxlength="80">' +
+          '<button type="button" class="trip-del" data-action="trip-item-del" data-id="' + t.id + '" data-list="flights" data-item="' + it.id + '" aria-label="Delete">×</button></div>' +
+          '<textarea rows="2" class="travel-itinerary-summary" placeholder="Confirmation #, times, address, check-in…" data-input="trip-item-field" data-field="details" data-id="' + t.id + '" data-list="flights" data-item="' + it.id + '">' + escapeHtml(it.details || '') + '</textarea></div>';
+      }).join('');
+      var flightForm = tripAddForm(t, 'flights', 'Add a flight or stay (e.g. AUS → KIN, Sat 8:00 AM)',
+        '<select name="kind"><option value="flight">✈️ Flight</option><option value="stay">🏨 Stay</option></select>');
+      var spendRows = t.spending.map(function (it) {
+        return '<div class="trip-check-row">' +
+          '<input type="text" class="trip-item-text" data-input="trip-item-field" data-field="text" data-id="' + t.id + '" data-list="spending" data-item="' + it.id + '" value="' + attr(it.text) + '" maxlength="80">' +
+          '<input type="number" class="trip-amt" min="0" step="any" inputmode="decimal" data-input="trip-item-field" data-field="amount" data-id="' + t.id + '" data-list="spending" data-item="' + it.id + '" value="' + attr(it.amount) + '">' +
+          '<button type="button" class="trip-del" data-action="trip-item-del" data-id="' + t.id + '" data-list="spending" data-item="' + it.id + '" aria-label="Delete">×</button></div>';
+      }).join('');
+      var cur = t.currency || {};
+      var budget = '<div class="trip-budget-summary" data-trip="' + t.id + '">' + tripBudgetSummaryHTML(t) + '</div>' +
+        (spendRows || '<p class="goals-footnote">Log what you spend (flights, stay, food…) in USD. The estimate comes from “Est. budget” under ✎ Edit details.</p>') +
+        tripAddForm(t, 'spending', 'What did you spend on? (e.g. Flights)') +
+        '<div class="trip-currency"><span>Local currency</span>' +
+        '<input type="text" maxlength="5" placeholder="JMD" data-input="trip-currency-code" data-id="' + t.id + '" value="' + attr(cur.code || '') + '" class="trip-cur-code">' +
+        '<span>1 USD =</span><input type="number" min="0" step="any" inputmode="decimal" placeholder="rate" data-input="trip-currency-rate" data-id="' + t.id + '" value="' + attr(cur.rate == null ? '' : cur.rate) + '" class="trip-amt"></div>' +
+        '<div class="trip-currency"><span>Convert</span><input type="number" min="0" step="any" inputmode="decimal" placeholder="amount in local" data-input="trip-convert" data-id="' + t.id + '" class="trip-amt" style="width:120px;"><span class="trip-convert-out"></span></div>';
+      return '<div class="trip-toolkit">' +
+        tripSection(t, 'booking', '✅ Booking checklist', t.bookingItems.length ? bookDone + '/' + t.bookingItems.length : '', booking) +
+        tripSection(t, 'packing', '🧳 Packing list', t.packingList.length ? packDone + '/' + t.packingList.length : '', packing) +
+        tripSection(t, 'flights', '✈️ Flights & stay', t.flights.length ? String(t.flights.length) : '', flights + flightForm) +
+        tripSection(t, 'budget', '💵 Budget & currency', '', budget) +
+        '</div>';
+    }
     var beautySearchQuery = ''; // ephemeral UI state — local filter text for curated picks; not persisted
     var beautyFormRating = 0; // ephemeral UI state — star rating picked in the add-product form before submit; not persisted
     function travelCardHTML(t, colId) {
@@ -12083,6 +12215,7 @@ Place this code in the empty space below. */
         ? '<div class="travel-card-notes"><textarea rows="2" placeholder="Save what you did / itinerary notes" data-input="travel-itinerary" data-id="' + t.id + '">' + escapeHtml(t.itinerary || '') + '</textarea></div>'
         : '';
       var metaPills = [];
+      if (colId === 'planned') { var cdPill = tripCountdownPill(t); if (cdPill) metaPills.push(cdPill); }
       if (t.dates) metaPills.push('<span class="travel-meta-pill">📅 ' + escapeHtml(t.dates) + '</span>');
       if (t.budget) metaPills.push('<span class="travel-meta-pill">💵 ' + escapeHtml(t.budget) + '</span>');
       var metaHTML = metaPills.length ? '<div class="travel-card-meta">' + metaPills.join('') + '</div>' : '';
@@ -12131,7 +12264,7 @@ Place this code in the empty space below. */
           emailBlock +
           '</details>'
         : (isEditing ? emailBlock : '');
-      var dayPlanBlock = (colId === 'planned' && !isEditing) ? travelItineraryHTML(t) : '';
+      var dayPlanBlock = (colId === 'planned' && !isEditing) ? travelItineraryHTML(t) + travelToolkitHTML(t) : '';
       return '<div class="travel-card' + (isEditing ? ' is-editing' : '') + '">' + mainBlock +
         itinerary + detailsBlock + dayPlanBlock +
         '<div class="travel-card-actions">' + actions + '</div></div>';
@@ -13487,6 +13620,42 @@ Place this code in the empty space below. */
         var trvIdx = state.travel.findIndex(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (trvIdx > -1) { state.travel.splice(trvIdx, 1); renderTravel(); scheduleSave(); }
 
+      } else if (action === 'trip-item-del') {
+        var dTrip = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
+        var dList = dTrip && dTrip[btn.getAttribute('data-list')];
+        if (Array.isArray(dList)) {
+          var dIdx = dList.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
+          if (dIdx > -1) { dList.splice(dIdx, 1); renderTravel(); scheduleSave(); }
+        }
+
+      } else if (action === 'trip-seed') {
+        var sTrip = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
+        var sKey = btn.getAttribute('data-list');
+        if (sTrip && !sTrip[sKey].length) {
+          sTrip[sKey] = state.tripTemplates[sKey].map(function (txt) { return { id: uid('ti'), text: txt, done: false }; });
+          renderTravel(); scheduleSave();
+        }
+
+      } else if (action === 'trip-save-template') {
+        var tpTrip = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
+        var tpKey = btn.getAttribute('data-list');
+        if (tpTrip && tpTrip[tpKey].length) {
+          state.tripTemplates[tpKey] = tpTrip[tpKey].map(function (x) { return x.text; }).filter(Boolean);
+          scheduleSave();
+          showToast('Saved — new trips will start from this list.');
+        }
+
+      } else if (action === 'trip-from-notes') {
+        var nTrip = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
+        if (nTrip && !nTrip.bookingItems.length) {
+          String(nTrip.notes || '').split('\n').forEach(function (line) {
+            line = line.trim();
+            if (!line || /^[A-Z][A-Z &\/]+:?$/.test(line) || /^Day \d+/.test(line)) return;
+            nTrip.bookingItems.push({ id: uid('ti'), text: line.slice(0, 80), done: false });
+          });
+          renderTravel(); scheduleSave();
+        }
+
       } else if (action === 'toggle-travel-edit') {
         var editId = btn.getAttribute('data-id');
         travelEditIds[editId] = !travelEditIds[editId];
@@ -13727,8 +13896,39 @@ Place this code in the empty space below. */
         gwk4.notes[gid4][gday4] = t.value;
         scheduleSaveDebounced();
 
+      } else if (kind === 'trip-item-check' || kind === 'trip-item-field') {
+        var tiTrip = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        var tiList = tiTrip && tiTrip[t.getAttribute('data-list')];
+        var tiItem = Array.isArray(tiList) && tiList.find(function (x) { return x.id === t.getAttribute('data-item'); });
+        if (tiItem) {
+          if (kind === 'trip-item-check') { tiItem.done = t.checked; renderTravel(); scheduleSave(); }
+          else {
+            var tiField = t.getAttribute('data-field');
+            tiItem[tiField] = tiField === 'amount' ? (Number(t.value) || 0) : t.value;
+            if (tiField === 'amount') {
+              var sumEl = t.closest('.travel-card').querySelector('.trip-budget-summary');
+              if (sumEl) sumEl.innerHTML = tripBudgetSummaryHTML(tiTrip);
+            }
+            scheduleSaveDebounced();
+          }
+        }
+
+      } else if (kind === 'trip-currency-code' || kind === 'trip-currency-rate' || kind === 'trip-convert') {
+        var curTrip = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (curTrip) {
+          if (kind === 'trip-currency-code') curTrip.currency.code = t.value.toUpperCase().trim();
+          else if (kind === 'trip-currency-rate') curTrip.currency.rate = t.value === '' ? null : Number(t.value);
+          var curCard = t.closest('.travel-card');
+          var curSum = curCard.querySelector('.trip-budget-summary');
+          if (curSum) curSum.innerHTML = tripBudgetSummaryHTML(curTrip);
+          var cvIn = curCard.querySelector('[data-input="trip-convert"]');
+          var cvOut = curCard.querySelector('.trip-convert-out');
+          if (cvIn && cvOut) cvOut.textContent = tripConvertText(curTrip, cvIn.value);
+          if (kind !== 'trip-convert') scheduleSaveDebounced();
+        }
+
       } else if (kind === 'travel-itinerary') {
-        var trvNote = state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        var trvNote =state.travel.find(function (x) { return x.id === t.getAttribute('data-id'); });
         if (trvNote) { trvNote.itinerary = t.value; scheduleSaveDebounced(); }
 
       } else if (kind === 'travel-place-edit') {
@@ -13895,8 +14095,27 @@ Place this code in the empty space below. */
     });
 
     /* ---- submit delegation (new forms across the added pages) ---- */
+    document.body.addEventListener('toggle', function (e) {
+      var d = e.target;
+      if (d && d.classList && d.classList.contains('trip-sec')) travelSecOpen[d.getAttribute('data-sec')] = d.open;
+    }, true);
     document.body.addEventListener('submit', function (e) {
       var form = e.target;
+      if (form && form.hasAttribute && form.hasAttribute('data-trip-form')) {
+        e.preventDefault();
+        var tfTrip = state.travel.find(function (x) { return x.id === form.getAttribute('data-id'); });
+        var tfList = form.getAttribute('data-list');
+        var tfText = (form.elements.text.value || '').trim();
+        if (!tfTrip || !Array.isArray(tfTrip[tfList]) || !tfText) return;
+        var tfItem = { id: uid('ti'), text: tfText };
+        if (tfList === 'spending') tfItem.amount = Number(form.elements.amount.value) || 0;
+        else if (tfList === 'flights') { tfItem.kind = form.elements.kind.value; tfItem.details = ''; }
+        else tfItem.done = false;
+        tfTrip[tfList].push(tfItem);
+        travelSecOpen[tfTrip.id + '|' + ({ bookingItems: 'booking', packingList: 'packing', flights: 'flights', spending: 'budget' })[tfList]] = true;
+        renderTravel(); scheduleSave();
+        return;
+      }
       if (!form || !form.id) return;
 
       if (form.id === 'past-workout-form') {
