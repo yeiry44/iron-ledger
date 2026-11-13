@@ -524,6 +524,39 @@
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
   .travel-card details input, .travel-card details textarea, .travel-card details select,
   .hub-sec input, .hub-sec textarea, .hub-sec select{ background:transparent !important; }
+  .shelf-goal{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
+  .shelf-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .shelf-tab{ font-family:var(--font-mono); font-size:11px; letter-spacing:.3px; background:none; border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--ink-dim); cursor:pointer; }
+  .shelf-tab span{ opacity:.7; margin-left:2px; }
+  .shelf-tab.is-active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+  .shelf-list{ display:flex; flex-direction:column; gap:10px; }
+  .shelf-card{ border:1px solid var(--line); border-radius:14px; padding:10px 12px; background:transparent; }
+  .shelf-card[open]{ box-shadow:0 2px 10px rgba(0,0,0,.05); }
+  .shelf-card > summary{ list-style:none; cursor:pointer; display:flex; align-items:center; gap:12px; }
+  .shelf-card > summary::-webkit-details-marker{ display:none; }
+  .shelf-thumb{ flex:none; width:38px; height:54px; border-radius:4px 7px 7px 4px; display:flex; align-items:center; justify-content:center; overflow:hidden; color:#fff; font-family:var(--font-display, serif); font-size:18px; box-shadow:inset 3px 0 0 rgba(0,0,0,.18); }
+  .shelf-thumb img{ width:100%; height:100%; object-fit:cover; }
+  .shelf-main{ flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+  .shelf-title{ font-size:14px; color:var(--ink); line-height:1.25; }
+  .shelf-by{ font-size:11.5px; color:var(--ink-dim); }
+  .shelf-series{ align-self:flex-start; font-family:var(--font-mono); font-size:9.5px; color:var(--accent); border:1px solid var(--accent); border-radius:999px; padding:1px 7px; margin-top:2px; }
+  .shelf-pct{ font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); flex:none; }
+  .shelf-stars{ flex:none; letter-spacing:1px; }
+  .shelf-mini-star{ font-size:11px; color:var(--line); }
+  .shelf-mini-star.is-filled{ color:var(--accent); }
+  .shelf-body{ margin-top:12px; padding-top:10px; border-top:1px dashed var(--line); display:flex; flex-direction:column; gap:8px; }
+  .shelf-label{ font-family:var(--font-mono); font-size:10px; letter-spacing:.6px; text-transform:uppercase; color:var(--ink-dim); margin-top:4px; }
+  .shelf-note{ display:flex; gap:6px; align-items:flex-start; }
+  .shelf-note textarea, .shelf-series-input, .shelf-card .trip-add-form input[type=text]{ background:transparent !important; border:1px solid var(--line); border-radius:6px; padding:5px 7px; font-size:12.5px; color:var(--ink); flex:1; min-width:0; font-family:var(--font-body); }
+  .shelf-card input, .shelf-card textarea, .shelf-card select{ background:transparent !important; }
+  .look-item{ display:flex; gap:6px; align-items:center; }
+  .look-item select{ flex:none; width:96px; font-size:12px; border:1px solid var(--line); border-radius:6px; padding:5px; color:var(--ink); }
+  .look-item input{ flex:1; min-width:0; font-size:12.5px; border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); background:transparent; }
+  #beauty-looks .shelf-card input, #beauty-looks .shelf-card textarea, #beauty-looks .shelf-card select{ background:transparent !important; }
+  .shelf-remove{ text-align:right; }
+  .shelf-remove .trip-del{ font-family:var(--font-mono); font-size:10.5px; }
+  .shelf-series-card{ border:1px solid var(--line); border-radius:14px; padding:12px; margin-bottom:10px; }
+  .shelf-series-row{ font-size:12.5px; color:var(--ink); padding:3px 0; }
   .hub-sec-body{ padding:2px 0 8px; }
   .hub-sec{ margin-top:8px; }
   .pr-row{ display:flex; align-items:baseline; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
@@ -1088,6 +1121,11 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <div id="beauty-products-list"></div>
 
         <div class="panel-head-row" style="margin-top:18px;">
+          <h2 style="font-size:16px;">💄 My Looks</h2>
+        </div>
+        <div id="beauty-looks"></div>
+
+        <div class="panel-head-row" style="margin-top:18px;">
           <h2 style="font-size:16px;">🔥 On sale this week</h2>
           <span class="goals-week-range" id="sale-watch-date"></span>
         </div>
@@ -1117,9 +1155,12 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
     <div class="page" data-page="books" id="page-books">
       <div id="reading-hub"></div>
       <section class="panel">
-        <h2 style="margin-bottom:10px;">Book Log 📚</h2>
-        <p class="goals-footnote" style="margin:0 0 14px;">Every book you finish, with your own star rating — pick the stars before you hit Add, or adjust them any time after.</p>
+        <h2 style="margin-bottom:10px;">➕ Add a book</h2>
+        <p class="goals-footnote" style="margin:0 0 14px;">Choose where it goes — finished, reading now, or want to read. It shows up on your bookshelf above.</p>
         <form id="book-form" class="beauty-form">
+          <select id="book-status" aria-label="Status"><option value="finished">✅ Finished</option><option value="reading">📖 Reading now</option><option value="toread">🔖 Want to read</option></select>
+          <input type="text" id="book-series" placeholder="Series (optional)" maxlength="50">
+          <input type="text" id="book-series-num" placeholder="#" maxlength="4" style="flex:0 0 56px;">
           <div class="autocomplete-wrap">
             <input type="text" id="book-title" placeholder="Book title" maxlength="80" autocomplete="off">
             <div id="book-title-suggest" class="autocomplete-list" hidden></div>
@@ -10162,6 +10203,9 @@ Place this code in the empty space below. */
     if (!state.habitConfig.overrides || typeof state.habitConfig.overrides !== 'object') state.habitConfig.overrides = {};
     if (!Array.isArray(state.habitConfig.custom)) state.habitConfig.custom = [];
     if (!state.challenge || typeof state.challenge !== 'object') state.challenge = { goal: 3 };
+    if (!state.seriesTotals || typeof state.seriesTotals !== 'object') state.seriesTotals = {};
+    if (!Array.isArray(state.beautyLooks)) state.beautyLooks = [];
+    state.beautyLooks.forEach(function (lk) { if (!Array.isArray(lk.items)) lk.items = []; });
     if (!state.readingGoal || typeof state.readingGoal !== 'object') state.readingGoal = { target: 4 };
     ['currentlyReading', 'toRead', 'bookNotes'].forEach(function (k) { if (!Array.isArray(state[k])) state[k] = []; });
     // Her "usual" starting lists for a new trip — editable via "Save as my usual list" on a trip
@@ -10856,6 +10900,28 @@ Place this code in the empty space below. */
       return arr;
     }
 
+    function ownSessionsList() { return state.sessions; }
+    // New sets start pre-filled with the reps/weight from the last session where that exercise was logged
+    function prefillSetsFromLast(name, date, count, guess) {
+      var sorted = ownSessionsList().filter(function (s) { return s.date < date; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      for (var i = 0; i < sorted.length; i++) {
+        var ex = sorted[i].exercises.find(function (e) { return e.name === name && e.type === 'strength'; });
+        if (ex && ex.sets && ex.sets.some(function (s) { return s.reps !== '' || s.weight !== ''; })) {
+          var arr = [];
+          for (var k = 0; k < count; k++) {
+            var src = ex.sets[Math.min(k, ex.sets.length - 1)];
+            arr.push({ reps: src.reps, weight: src.weight !== '' ? src.weight : (guess || ''), done: false });
+          }
+          return arr;
+        }
+      }
+      return buildDefaultSets(count, guess);
+    }
+    function backfillUntouchedSets(ex, date) {
+      if (!ex.sets || !ex.sets.every(function (s) { return !s.done && s.reps === ''; })) return;
+      var pre = prefillSetsFromLast(ex.name, date, ex.sets.length, '');
+      ex.sets.forEach(function (s, i) { if (s.reps === '') s.reps = pre[i].reps; if (s.weight === '') s.weight = pre[i].weight; });
+    }
     function getOrSyncSession(routineId, dateIso) {
       var routine = getRoutine(routineId);
       if (!routine) return null;
@@ -10868,12 +10934,12 @@ Place this code in the empty space below. */
       routine.exercises.forEach(function (ex) {
         if (!ex.name) return; // don't freeze a placeholder row that hasn't been named yet
         var exists = session.exercises.some(function (e) { return e.exerciseId === ex.id; });
-        if (exists) return;
+        if (exists) { var curEx = session.exercises.find(function (e) { return e.exerciseId === ex.id; }); if (curEx && curEx.type === 'strength' && date === todayISO()) backfillUntouchedSets(curEx, date); return; }
         if (ex.type === 'cardio') {
           session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'cardio', duration: ex.targetDuration || '', distance: ex.targetDistance || '', done: false, note: '' });
         } else {
           var guess = lastWeightForExercise(ex.name);
-          session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'strength', targetReps: ex.targetReps || '', sets: buildDefaultSets(Number(ex.targetSets) || 3, guess), note: '' });
+          session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'strength', targetReps: ex.targetReps || '', sets: prefillSetsFromLast(ex.name, date, Number(ex.targetSets) || 3, guess), note: '' });
         }
       });
       return session;
@@ -12828,8 +12894,85 @@ Place this code in the empty space below. */
       if (f) f.style.width = (tgt > 0 ? Math.min(100, Math.round(done / tgt * 100)) : 0) + '%';
       if (tx) tx.innerHTML = readingGoalText(done, tgt);
     }
-    function hubSection(key, title, meta, body) {
-      return '<details class="hub-sec travel-itinerary trip-sec" data-sec="' + attr('hub|' + key) + '"' + (travelSecOpen['hub|' + key] ? ' open' : '') + '><summary>' + title + (meta ? ' <span class="trip-sec-meta">' + meta + '</span>' : '') + '</summary><div class="hub-sec-body">' + body + '</div></details>';
+    /* ---- one unified shelf: currently reading, to-read and finished books as tappable cards (each
+       with its own progress/stars, series and quotes), plus a Series tab. ---- */
+    var shelfTab = null; // ephemeral UI state
+    function shelfSeriesBadge(b) {
+      return b.seriesName ? '<span class="shelf-series">' + escapeHtml(b.seriesName) + (b.seriesNum ? ' · #' + escapeHtml(b.seriesNum) : '') + '</span>' : '';
+    }
+    function shelfThumb(b, i) {
+      var color = BOOK_SPINE_COLORS[i % BOOK_SPINE_COLORS.length];
+      return '<span class="shelf-thumb" style="background:' + color + ';">' +
+        (b.coverId ? '<img src="https://covers.openlibrary.org/b/id/' + b.coverId + '-S.jpg" alt="" loading="lazy" onerror="this.remove()">' : '<span>' + escapeHtml((b.title || '?').charAt(0).toUpperCase()) + '</span>') + '</span>';
+    }
+    function shelfNotesHTML(b) {
+      var notes = state.bookNotes.filter(function (n) { return n.book === b.title; });
+      return '<div class="shelf-label">Quotes &amp; notes</div>' +
+        notes.slice().reverse().map(function (n) {
+          return '<div class="shelf-note"><span class="shelf-note-kind">' + (n.kind === 'note' ? '📝' : '💬') + '</span>' +
+            '<textarea rows="2" data-input="hub-field" data-list="bookNotes" data-item="' + n.id + '" data-field="text">' + escapeHtml(n.text || '') + '</textarea>' + hubDelBtn('bookNotes', n.id) + '</div>';
+        }).join('') +
+        hubAddForm('note', '<input type="hidden" name="book" value="' + attr(b.title) + '"><select name="kind"><option value="quote">💬 Quote</option><option value="note">📝 Note</option></select><input type="text" name="text" placeholder="Add a quote or note…" maxlength="600">', 'Save');
+    }
+    function shelfCardHTML(status, listName, b, i) {
+      var key = 'shelf|' + b.id;
+      var side = '', body = '';
+      if (status === 'reading') {
+        var p = readingPct(b);
+        side = '<span class="shelf-pct hub-pct">' + p + '%</span>';
+        body = '<div class="progress-bar-track"><div class="progress-bar-fill hub-fill" style="width:' + p + '%"></div></div>' +
+          '<div class="trip-currency" style="margin-top:6px;"><span>Page</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + b.id + '" data-field="pagesRead" value="' + attr(b.pagesRead || 0) + '"><span>of</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + b.id + '" data-field="totalPages" value="' + attr(b.totalPages || '') + '">' +
+          '<button type="button" class="hub-btn" data-action="hub-finish" data-item="' + b.id + '">Finished ✓</button></div>';
+      } else if (status === 'toread') {
+        side = '<span class="shelf-pct">🔖</span>';
+        body = '<button type="button" class="hub-btn" style="margin-left:0;" data-action="hub-start" data-item="' + b.id + '">Start reading</button>';
+      } else {
+        var rating = Number(b.rating) || 0, stars = '', mini = '';
+        for (var s = 1; s <= 5; s++) {
+          stars += '<button type="button" class="beauty-star' + (s <= rating ? ' is-filled' : '') + '" data-action="set-book-rating" data-id="' + b.id + '" data-star="' + s + '" aria-label="Rate ' + s + '">★</button>';
+          mini += '<span class="shelf-mini-star' + (s <= rating ? ' is-filled' : '') + '">★</span>';
+        }
+        side = '<span class="shelf-stars">' + mini + '</span>';
+        var meta = [];
+        if (b.genre) meta.push(escapeHtml(b.genre));
+        if (b.monthRead) meta.push('read ' + escapeHtml(monthReadLabel(b.monthRead)));
+        body = '<div class="beauty-product-stars">' + stars + '</div>' + (meta.length ? '<div class="book-meta">' + meta.map(function (m) { return '<span>' + m + '</span>'; }).join('') + '</div>' : '') +
+          (b.synopsis ? '<div class="book-synopsis">' + escapeHtml(b.synopsis) + '</div>' : '');
+      }
+      var remove = status === 'finished'
+        ? '<button type="button" class="trip-del" data-action="remove-book" data-id="' + b.id + '" aria-label="Remove">× remove</button>'
+        : '<button type="button" class="trip-del" data-action="hub-del" data-list="' + listName + '" data-item="' + b.id + '" aria-label="Remove">× remove</button>';
+      var series = '<div class="trip-currency"><span>Series</span><input type="text" class="shelf-series-input" placeholder="e.g. Fourth Wing" maxlength="50" data-input="hub-field" data-list="' + listName + '" data-item="' + b.id + '" data-field="seriesName" value="' + attr(b.seriesName || '') + '"><span>#</span><input type="text" class="trip-amt" style="width:52px;" maxlength="4" data-input="hub-field" data-list="' + listName + '" data-item="' + b.id + '" data-field="seriesNum" value="' + attr(b.seriesNum || '') + '"></div>';
+      return '<details class="shelf-card trip-sec" data-sec="' + attr(key) + '"' + (travelSecOpen[key] ? ' open' : '') + ' data-hub-row="' + b.id + '"><summary>' + shelfThumb(b, i) +
+        '<span class="shelf-main"><span class="shelf-title">' + escapeHtml(b.title) + '</span><span class="shelf-by">' + (b.author ? 'by ' + escapeHtml(b.author) : '&nbsp;') + '</span>' + shelfSeriesBadge(b) + '</span>' + side + '</summary>' +
+        '<div class="shelf-body">' + body + series + shelfNotesHTML(b) + '<div class="shelf-remove">' + remove + '</div></div></details>';
+    }
+    function shelfSeriesHTML() {
+      var all = [];
+      state.currentlyReading.forEach(function (b) { all.push({ b: b, st: 'reading' }); });
+      state.toRead.forEach(function (b) { all.push({ b: b, st: 'toread' }); });
+      state.books.forEach(function (b) { all.push({ b: b, st: 'finished' }); });
+      var groups = {};
+      all.forEach(function (x) { if (x.b.seriesName) { var k = x.b.seriesName.trim().toLowerCase(); (groups[k] = groups[k] || { name: x.b.seriesName.trim(), items: [] }).items.push(x); } });
+      var keys = Object.keys(groups).sort();
+      if (!keys.length) return '<p class="goals-footnote">No series yet — open any book and fill in its “Series” name and number to track it here.</p>';
+      var icon = { finished: '✅', reading: '📖', toread: '🔖' };
+      return keys.map(function (k) {
+        var g = groups[k];
+        g.items.sort(function (a, b) { return (parseFloat(a.b.seriesNum) || 999) - (parseFloat(b.b.seriesNum) || 999); });
+        var readN = g.items.filter(function (x) { return x.st === 'finished'; }).length;
+        var maxNum = g.items.reduce(function (m, x) { return Math.max(m, parseFloat(x.b.seriesNum) || 0); }, 0);
+        var total = Number(state.seriesTotals[k]) || Math.max(maxNum, g.items.length);
+        var pct = Math.min(100, Math.round(readN / total * 100));
+        var have = {}; g.items.forEach(function (x) { have[parseFloat(x.b.seriesNum) || 0] = x; });
+        var next = null;
+        for (var n = 1; n <= total && !next; n++) { if (!have[n] || have[n].st !== 'finished') next = n; }
+        var nextTxt = next ? (have[next] ? 'Next up: #' + next + ' ' + escapeHtml(have[next].b.title) : 'Next up: book #' + next + ' (not on your lists yet)') : 'Series complete! 🎉';
+        return '<div class="shelf-series-card"><div class="hub-row-head"><span class="beauty-product-name">' + escapeHtml(g.name) + '</span><span class="num shelf-pct">' + readN + ' of ' + total + '</span></div>' +
+          '<div class="progress-bar-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div>' +
+          g.items.map(function (x) { return '<div class="shelf-series-row">' + icon[x.st] + ' ' + (x.b.seriesNum ? '#' + escapeHtml(x.b.seriesNum) + ' ' : '') + escapeHtml(x.b.title) + '</div>'; }).join('') +
+          '<div class="trip-currency"><span>' + nextTxt + '</span><span style="margin-left:auto;">Books in series</span><input type="number" min="1" class="trip-amt" style="width:64px;" data-input="series-total" data-name="' + attr(k) + '" value="' + attr(state.seriesTotals[k] || '') + '" placeholder="' + total + '"></div></div>';
+      }).join('');
     }
     function renderReadingHub() {
       var el = document.getElementById('reading-hub');
@@ -12838,69 +12981,25 @@ Place this code in the empty space below. */
       var done = readingGoalDone();
       var tgt = Number(state.readingGoal.target) || 0;
       var gpct = tgt > 0 ? Math.min(100, Math.round(done / tgt * 100)) : 0;
-      var goal = '<h2 style="font-size:16px;margin-bottom:8px;">📚 ' + yr + ' Reading Goal</h2>' +
-        '<div class="trip-currency" style="margin-top:0;"><span>My goal:</span><input type="number" min="1" step="1" class="trip-amt" data-input="reading-goal" value="' + attr(tgt || '') + '"><span>books this year</span></div>' +
-        '<div class="progress-bar-track" style="margin:10px 0 6px;"><div class="progress-bar-fill hub-goal-fill" style="width:' + gpct + '%"></div></div>' +
-        '<p class="goals-footnote hub-goal-text" style="margin:0 0 10px;">' + readingGoalText(done, tgt) + '</p>';
-      var cur = (state.currentlyReading.map(function (r) {
-          var p = readingPct(r);
-          return '<div class="hub-row" data-hub-row="' + r.id + '"><div class="hub-row-head"><span class="beauty-product-name">' + escapeHtml(r.title) + (r.author ? ' <em>by ' + escapeHtml(r.author) + '</em>' : '') + '</span>' + hubDelBtn('currentlyReading', r.id) + '</div>' +
-            '<div class="progress-bar-track"><div class="progress-bar-fill hub-fill" style="width:' + p + '%"></div></div>' +
-            '<div class="trip-currency" style="margin-top:6px;"><span>Page</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + r.id + '" data-field="pagesRead" value="' + attr(r.pagesRead || 0) + '"><span>of</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + r.id + '" data-field="totalPages" value="' + attr(r.totalPages || '') + '"><span class="hub-pct">' + p + '%</span>' +
-            '<button type="button" class="hub-btn" data-action="hub-finish" data-item="' + r.id + '">Finished ✓</button></div></div>';
-        }).join('') || '<p class="goals-footnote">Nothing in progress.</p>') +
-        hubAddForm('reading', '<input type="text" name="title" placeholder="Book title" maxlength="80"><input type="text" name="author" placeholder="Author" maxlength="60"><input type="number" name="pages" min="1" placeholder="Total pages" class="trip-amt" style="width:110px;">', 'Add');
-      var toread = (state.toRead.map(function (r) {
-          return '<div class="trip-check-row"><span class="beauty-product-name" style="flex:1;">' + escapeHtml(r.title) + (r.author ? ' <em>by ' + escapeHtml(r.author) + '</em>' : '') + '</span>' +
-            '<button type="button" class="hub-btn" data-action="hub-start" data-item="' + r.id + '">Start reading</button>' + hubDelBtn('toRead', r.id) + '</div>';
-        }).join('') || '<p class="goals-footnote">Nothing on your list yet.</p>') +
-        hubAddForm('toread', '<input type="text" name="title" placeholder="Book title" maxlength="80"><input type="text" name="author" placeholder="Author" maxlength="60">', 'Add');
-      var titles = {};
-      state.books.concat(state.currentlyReading, state.toRead).forEach(function (b) { if (b.title) titles[b.title] = 1; });
-      var groups = {};
-      state.bookNotes.forEach(function (n) { var k = n.book || 'Untitled'; (groups[k] = groups[k] || []).push(n); });
-      var notesBody = '<datalist id="hub-book-titles">' + Object.keys(titles).map(function (n) { return '<option value="' + attr(n) + '">'; }).join('') + '</datalist>' +
-        hubAddForm('note', '<input type="text" name="book" list="hub-book-titles" placeholder="Which book?" maxlength="80"><select name="kind"><option value="quote">💬 Quote</option><option value="note">📝 Note</option></select><textarea name="text" rows="2" placeholder="Favorite line or your thoughts…" maxlength="600" style="flex:1 1 100%;font-size:12.5px;background:transparent;border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--ink);"></textarea>', 'Save') +
-        (Object.keys(groups).sort().map(function (book) {
-          var list = groups[book];
-          return hubSection('note|' + book, '📖 ' + escapeHtml(book), String(list.length), list.slice().reverse().map(function (n) {
-            return '<div class="hub-row"><div class="hub-row-head"><span class="beauty-product-name">' + (n.kind === 'note' ? '📝 Note' : '💬 Quote') + ' <em>' + escapeHtml(n.date || '') + '</em></span>' + hubDelBtn('bookNotes', n.id) + '</div>' +
-              '<textarea rows="2" class="travel-itinerary-summary" data-input="hub-field" data-list="bookNotes" data-item="' + n.id + '" data-field="text">' + escapeHtml(n.text || '') + '</textarea></div>';
-          }).join(''));
-        }).join('') || '<p class="goals-footnote">No quotes or notes yet.</p>');
-      el.innerHTML = '<section class="panel">' + goal +
-        hubSection('reading', '📖 Currently reading', state.currentlyReading.length ? String(state.currentlyReading.length) : '', cur) +
-        hubSection('toread', '🔖 To-read list', state.toRead.length ? String(state.toRead.length) : '', toread) +
-        hubSection('notes', '💬 Quotes &amp; notes', state.bookNotes.length ? String(state.bookNotes.length) : '', notesBody) +
-        '</section>';
+      if (!shelfTab) shelfTab = state.currentlyReading.length ? 'reading' : 'finished';
+      var tabs = [['reading', 'Reading', state.currentlyReading.length], ['toread', 'To read', state.toRead.length], ['finished', 'Finished', state.books.length], ['series', 'Series', null]];
+      var tabBar = '<div class="shelf-tabs">' + tabs.map(function (t) {
+        return '<button type="button" class="shelf-tab' + (t[0] === shelfTab ? ' is-active' : '') + '" data-action="shelf-tab" data-tab="' + t[0] + '">' + t[1] + (t[2] !== null ? ' <span>' + t[2] + '</span>' : '') + '</button>';
+      }).join('') + '</div>';
+      var content;
+      if (shelfTab === 'series') content = shelfSeriesHTML();
+      else {
+        var list = shelfTab === 'reading' ? state.currentlyReading : (shelfTab === 'toread' ? state.toRead : state.books.slice().reverse());
+        var listName = shelfTab === 'reading' ? 'currentlyReading' : (shelfTab === 'toread' ? 'toRead' : 'books');
+        content = list.length ? list.map(function (b, i) { return shelfCardHTML(shelfTab, listName, b, i); }).join('') :
+          '<p class="goals-footnote">' + (shelfTab === 'reading' ? 'Nothing in progress — start one from your To-read tab or add a book below.' : (shelfTab === 'toread' ? 'Your to-read list is empty.' : 'No books finished yet.')) + '</p>';
+      }
+      el.innerHTML = '<section class="panel shelf-panel"><div class="shelf-goal"><h2 style="font-size:16px;margin:0;">📚 My Bookshelf</h2>' +
+        '<div class="trip-currency" style="margin:0;"><span>' + yr + ' goal</span><input type="number" min="1" step="1" class="trip-amt" style="width:60px;" data-input="reading-goal" value="' + attr(tgt || '') + '"><span>books</span></div></div>' +
+        '<div class="progress-bar-track" style="margin:10px 0 4px;"><div class="progress-bar-fill hub-goal-fill" style="width:' + gpct + '%"></div></div>' +
+        '<p class="goals-footnote hub-goal-text" style="margin:0 0 12px;">' + readingGoalText(done, tgt) + '</p>' + tabBar + '<div class="shelf-list">' + content + '</div></section>';
     }
-    function renderBooks() {
-      renderReadingHub();
-      var el = document.getElementById('books-list');
-      if (!el) return;
-      el.innerHTML = state.books.length ? state.books.slice().reverse().map(function (b) {
-        var rating = Number(b.rating) || 0;
-        var stars = '';
-        for (var s = 1; s <= 5; s++) {
-          stars += '<button type="button" class="beauty-star' + (s <= rating ? ' is-filled' : '') + '" data-action="set-book-rating" data-id="' + b.id + '" data-star="' + s + '" aria-label="Rate ' + attr(b.title) + ' ' + s + ' star' + (s === 1 ? '' : 's') + '" aria-pressed="' + (s <= rating) + '">★</button>';
-        }
-        var meta = [];
-        if (b.author) meta.push('<span>by ' + escapeHtml(b.author) + '</span>');
-        if (b.genre) meta.push('<span>' + escapeHtml(b.genre) + '</span>');
-        if (b.monthRead) meta.push('<span>read ' + escapeHtml(monthReadLabel(b.monthRead)) + '</span>');
-        if (b.usState) meta.push('<span>📍 ' + escapeHtml(locationName(US_STATES, b.usState)) + '</span>');
-        if (b.country) meta.push('<span>🌍 ' + escapeHtml(locationName(COUNTRIES, b.country)) + '</span>');
-        return '<div class="beauty-product-row">' +
-          '<div class="beauty-product-main">' +
-          '<span class="beauty-product-name">' + escapeHtml(b.title) + '</span>' +
-          '<button type="button" class="beauty-product-remove" data-action="remove-book" data-id="' + b.id + '" aria-label="Remove">×</button>' +
-          '</div>' +
-          (meta.length ? '<div class="book-meta">' + meta.join('') + '</div>' : '') +
-          (b.synopsis ? '<div class="book-synopsis">' + escapeHtml(b.synopsis) + '</div>' : '') +
-          '<div class="beauty-product-stars">' + stars + '</div>' +
-          '</div>';
-      }).join('') : '<p class="empty-note">No books logged yet.</p>';
-    }
+    function renderBooks() { renderReadingHub(); }
     function monthReadLabel(ym) {
       if (!ym) return '';
       var parts = ym.split('-');
@@ -13328,11 +13427,43 @@ Place this code in the empty space below. */
       }).join('') + '</div>' +
         (sw.note ? '<p class="goals-footnote" style="margin-top:8px;">' + escapeHtml(sw.note) + '</p>' : '');
     }
+    /* ---- occasion looks: a saved full combination of products (face, cheeks, eyes, lips…) per occasion ---- */
+    var LOOK_OCCASIONS = ['Everyday', 'Work', 'Date night', 'Formal', 'Beach', 'Other'];
+    var LOOK_AREAS = ['Face', 'Cheeks', 'Eyes', 'Brows', 'Lips', 'Skin prep', 'Other'];
+    function renderBeautyLooks() {
+      var el = document.getElementById('beauty-looks');
+      if (!el) return;
+      var names = {};
+      state.beautyProducts.forEach(function (p) { names[((p.brand ? p.brand + ' ' : '') + p.name).trim()] = 1; });
+      var dl = '<datalist id="look-products">' + Object.keys(names).map(function (n) { return '<option value="' + attr(n) + '">'; }).join('') + '</datalist>';
+      var cards = state.beautyLooks.map(function (lk) {
+        var key = 'look|' + lk.id;
+        var items = lk.items.map(function (it) {
+          return '<div class="look-item"><select data-input="look-item-field" data-look="' + lk.id + '" data-item="' + it.id + '" data-field="area">' +
+            LOOK_AREAS.map(function (a) { return '<option' + (a === it.area ? ' selected' : '') + '>' + a + '</option>'; }).join('') + '</select>' +
+            '<input type="text" list="look-products" placeholder="Product & shade" maxlength="80" data-input="look-item-field" data-look="' + lk.id + '" data-item="' + it.id + '" data-field="product" value="' + attr(it.product || '') + '">' +
+            '<button type="button" class="trip-del" data-action="look-item-del" data-look="' + lk.id + '" data-item="' + it.id + '" aria-label="Remove">×</button></div>';
+        }).join('');
+        return '<details class="shelf-card trip-sec" data-sec="' + attr(key) + '"' + (travelSecOpen[key] ? ' open' : '') + '><summary>' +
+          '<span class="shelf-main"><span class="shelf-title">' + escapeHtml(lk.name || 'Untitled look') + '</span><span class="shelf-by">' + lk.items.length + ' product' + (lk.items.length === 1 ? '' : 's') + '</span></span>' +
+          '<span class="shelf-series">' + escapeHtml(lk.occasion || 'Everyday') + '</span></summary>' +
+          '<div class="shelf-body">' +
+          '<div class="trip-currency" style="margin:0;"><span>Look name</span><input type="text" class="shelf-series-input" maxlength="50" data-input="look-field" data-look="' + lk.id + '" data-field="name" value="' + attr(lk.name || '') + '">' +
+          '<select data-input="look-field" data-look="' + lk.id + '" data-field="occasion">' + LOOK_OCCASIONS.map(function (o) { return '<option' + (o === lk.occasion ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></div>' +
+          (items || '<p class="goals-footnote">No products yet — add the ones you use for this look.</p>') +
+          '<div><button type="button" class="hub-btn" style="margin-left:0;" data-action="look-add-item" data-look="' + lk.id + '">+ Add product</button></div>' +
+          '<textarea rows="2" class="travel-itinerary-summary" placeholder="Notes (application order, tips…)" data-input="look-field" data-look="' + lk.id + '" data-field="notes">' + escapeHtml(lk.notes || '') + '</textarea>' +
+          '<div class="shelf-remove"><button type="button" class="trip-del" data-action="look-del" data-look="' + lk.id + '">× delete look</button></div></div></details>';
+      }).join('');
+      el.innerHTML = dl + '<div class="shelf-list">' + (cards || '<p class="goals-footnote">Save a full combination of products for each occasion, then check it before you get ready.</p>') + '</div>' +
+        hubAddForm('look', '<input type="text" name="title" placeholder="Look name (e.g. Soft glam date night)" maxlength="50"><select name="occasion">' + LOOK_OCCASIONS.map(function (o) { return '<option>' + o + '</option>'; }).join('') + '</select>', '+ New look');
+    }
     function renderTravelBeauty() {
       renderTravel();
       renderBeautyRecs();
       renderCuratedPicks();
       renderBeautyProducts();
+      renderBeautyLooks();
       renderBeautyFormStars();
       renderSaleWatch();
       renderBooks();
@@ -14024,6 +14155,21 @@ Place this code in the empty space below. */
         renderGoals();
         var gh = document.getElementById('goals-heading'); if (gh && gh.scrollIntoView) gh.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
+      } else if (action === 'look-add-item') {
+        var laLook = state.beautyLooks.find(function (x) { return x.id === btn.getAttribute('data-look'); });
+        if (laLook) { laLook.items.push({ id: uid('li'), area: 'Face', product: '' }); renderBeautyLooks(); scheduleSave(); }
+
+      } else if (action === 'look-item-del') {
+        var ldLook = state.beautyLooks.find(function (x) { return x.id === btn.getAttribute('data-look'); });
+        if (ldLook) { ldLook.items = ldLook.items.filter(function (x) { return x.id !== btn.getAttribute('data-item'); }); renderBeautyLooks(); scheduleSave(); }
+
+      } else if (action === 'look-del') {
+        state.beautyLooks = state.beautyLooks.filter(function (x) { return x.id !== btn.getAttribute('data-look'); });
+        renderBeautyLooks(); scheduleSave();
+
+      } else if (action === 'shelf-tab') {
+        shelfTab = btn.getAttribute('data-tab'); renderReadingHub();
+
       } else if (action === 'hub-del') {
         var hdList = state[btn.getAttribute('data-list')];
         if (Array.isArray(hdList)) {
@@ -14035,7 +14181,7 @@ Place this code in the empty space below. */
         var hfIdx = state.currentlyReading.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
         if (hfIdx > -1) {
           var hf = state.currentlyReading.splice(hfIdx, 1)[0];
-          state.books.push({ id: uid('bk'), title: hf.title, author: hf.author || '', genre: '', usState: '', country: '', monthRead: todayISO().slice(0, 7), synopsis: '', coverId: null, rating: 0, dateAdded: todayISO() });
+          state.books.push({ id: uid('bk'), title: hf.title, author: hf.author || '', genre: '', usState: '', country: '', monthRead: todayISO().slice(0, 7), synopsis: '', coverId: hf.coverId || null, rating: 0, seriesName: hf.seriesName || '', seriesNum: hf.seriesNum || '', dateAdded: todayISO() }); shelfTab = 'finished';
           renderAll(); scheduleSave();
           showToast('Nice — added to your Book Log. Give it some stars!');
         }
@@ -14044,7 +14190,7 @@ Place this code in the empty space below. */
         var hsIdx = state.toRead.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
         if (hsIdx > -1) {
           var hs = state.toRead.splice(hsIdx, 1)[0];
-          state.currentlyReading.push({ id: uid('cr'), title: hs.title, author: hs.author || '', totalPages: 0, pagesRead: 0, started: todayISO() });
+          state.currentlyReading.push({ id: uid('cr'), title: hs.title, author: hs.author || '', totalPages: 0, pagesRead: 0, started: todayISO(), seriesName: hs.seriesName || '', seriesNum: hs.seriesNum || '', coverId: hs.coverId || null }); shelfTab = 'reading';
           renderReadingHub(); scheduleSave();
         }
 
@@ -14431,6 +14577,21 @@ Place this code in the empty space below. */
         state.readingGoal.target = Math.max(0, Number(t.value) || 0);
         scheduleSaveDebounced(); renderReadingGoalProgress();
 
+      } else if (kind === 'look-field' || kind === 'look-item-field') {
+        var lkRef = state.beautyLooks.find(function (x) { return x.id === t.getAttribute('data-look'); });
+        if (lkRef) {
+          var lkTarget = kind === 'look-field' ? lkRef : lkRef.items.find(function (x) { return x.id === t.getAttribute('data-item'); });
+          if (lkTarget) {
+            lkTarget[t.getAttribute('data-field')] = t.value;
+            scheduleSaveDebounced();
+            if (t.tagName === 'SELECT' && t.getAttribute('data-field') === 'occasion') renderBeautyLooks();
+          }
+        }
+
+      } else if (kind === 'series-total') {
+        state.seriesTotals[t.getAttribute('data-name')] = Number(t.value) || 0;
+        scheduleSaveDebounced();
+
       } else if (kind === 'hub-field') {
         var hfList = state[t.getAttribute('data-list')];
         var hfItem = Array.isArray(hfList) && hfList.find(function (x) { return x.id === t.getAttribute('data-item'); });
@@ -14590,6 +14751,13 @@ Place this code in the empty space below. */
         var hk = form.getAttribute('data-hub-form');
         var hEl = form.elements;
         var hTitle = hEl.title ? hEl.title.value.trim() : '';
+        if (hk === 'look' && hTitle) {
+          var newLook = { id: uid('lk'), name: hTitle, occasion: hEl.occasion.value, items: [], notes: '' };
+          state.beautyLooks.push(newLook);
+          travelSecOpen['look|' + newLook.id] = true;
+          renderBeautyLooks(); scheduleSave();
+          return;
+        }
         if (hk === 'habit' && hTitle) {
           state.habitConfig.custom.push({ id: uid('h'), label: hTitle, type: hEl.type.value, target: Math.min(7, Math.max(1, Number(hEl.target.value) || 3)), excludeDays: [], remind: '' });
           rebuildGoalDefs(); renderGoals(); renderHabitsEditor(); scheduleSave();
@@ -14703,6 +14871,13 @@ Place this code in the empty space below. */
         var bookTitle = document.getElementById('book-title');
         if (!bookTitle.value.trim()) return;
         var bookMonthInput = document.getElementById('book-month-read');
+        var bookStatus = document.getElementById('book-status').value;
+        var seriesName = document.getElementById('book-series').value.trim(), seriesNum = document.getElementById('book-series-num').value.trim();
+        if (bookStatus === 'reading' || bookStatus === 'toread') {
+          var shelfItem = { id: uid(bookStatus === 'reading' ? 'cr' : 'tr'), title: bookTitle.value.trim(), author: document.getElementById('book-author').value.trim(), seriesName: seriesName, seriesNum: seriesNum, coverId: bookFormCoverId };
+          if (bookStatus === 'reading') { shelfItem.totalPages = 0; shelfItem.pagesRead = 0; shelfItem.started = todayISO(); state.currentlyReading.push(shelfItem); shelfTab = 'reading'; }
+          else { state.toRead.push(shelfItem); shelfTab = 'toread'; }
+        } else {
         state.books.push({
           id: uid('bk'),
           title: bookTitle.value.trim(),
@@ -14714,8 +14889,11 @@ Place this code in the empty space below. */
           synopsis: bookFormSynopsis,
           coverId: bookFormCoverId,
           rating: bookFormRating,
+          seriesName: seriesName, seriesNum: seriesNum,
           dateAdded: todayISO()
         });
+        shelfTab = 'finished';
+        }
         form.reset();
         bookFormRating = 0;
         bookFormSynopsis = '';

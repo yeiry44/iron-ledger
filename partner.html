@@ -10741,6 +10741,28 @@ Place this code in the empty space below. */
       return arr;
     }
 
+    function ownSessionsList() { return state.partnerSessions; }
+    // New sets start pre-filled with the reps/weight from the last session where that exercise was logged
+    function prefillSetsFromLast(name, date, count, guess) {
+      var sorted = ownSessionsList().filter(function (s) { return s.date < date; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+      for (var i = 0; i < sorted.length; i++) {
+        var ex = sorted[i].exercises.find(function (e) { return e.name === name && e.type === 'strength'; });
+        if (ex && ex.sets && ex.sets.some(function (s) { return s.reps !== '' || s.weight !== ''; })) {
+          var arr = [];
+          for (var k = 0; k < count; k++) {
+            var src = ex.sets[Math.min(k, ex.sets.length - 1)];
+            arr.push({ reps: src.reps, weight: src.weight !== '' ? src.weight : (guess || ''), done: false });
+          }
+          return arr;
+        }
+      }
+      return buildDefaultSets(count, guess);
+    }
+    function backfillUntouchedSets(ex, date) {
+      if (!ex.sets || !ex.sets.every(function (s) { return !s.done && s.reps === ''; })) return;
+      var pre = prefillSetsFromLast(ex.name, date, ex.sets.length, '');
+      ex.sets.forEach(function (s, i) { if (s.reps === '') s.reps = pre[i].reps; if (s.weight === '') s.weight = pre[i].weight; });
+    }
     function getOrSyncSession(routineId, dateIso) {
       var routine = getRoutine(routineId);
       if (!routine) return null;
@@ -10753,12 +10775,12 @@ Place this code in the empty space below. */
       routine.exercises.forEach(function (ex) {
         if (!ex.name) return; // don't freeze a placeholder row that hasn't been named yet
         var exists = session.exercises.some(function (e) { return e.exerciseId === ex.id; });
-        if (exists) return;
+        if (exists) { var curEx = session.exercises.find(function (e) { return e.exerciseId === ex.id; }); if (curEx && curEx.type === 'strength' && date === todayISO()) backfillUntouchedSets(curEx, date); return; }
         if (ex.type === 'cardio') {
           session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'cardio', duration: ex.targetDuration || '', distance: ex.targetDistance || '', done: false, note: '' });
         } else {
           var guess = lastWeightForExercise(ex.name);
-          session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'strength', targetReps: ex.targetReps || '', sets: buildDefaultSets(Number(ex.targetSets) || 3, guess), note: '' });
+          session.exercises.push({ exerciseId: ex.id, name: ex.name, type: 'strength', targetReps: ex.targetReps || '', sets: prefillSetsFromLast(ex.name, date, Number(ex.targetSets) || 3, guess), note: '' });
         }
       });
       return session;
