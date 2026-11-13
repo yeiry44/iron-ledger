@@ -14657,7 +14657,7 @@ Place this code in the empty space below. */
           var hfField = t.getAttribute('data-field');
           hfItem[hfField] = (hfField === 'pagesRead' || hfField === 'totalPages') ? (Number(t.value) || 0) : t.value;
           if (hfField === 'pagesRead' || hfField === 'totalPages') {
-            var hRow = t.closest('.hub-row'), hp = readingPct(hfItem);
+            var hRow = t.closest('.hub-row, .shelf-card'), hp = readingPct(hfItem);
             if (hRow) { hRow.querySelector('.hub-fill').style.width = hp + '%'; hRow.querySelector('.hub-pct').textContent = hp + '%'; }
           }
           scheduleSaveDebounced();
