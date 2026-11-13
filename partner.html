@@ -835,15 +835,6 @@
         <div id="pr-list"></div>
       </section>
 
-      <section class="panel">
-        <div class="panel-head-row">
-          <h2 style="font-size:16px;">📈 Progress Chart</h2>
-          <select class="unit-toggle" id="bigchart-select" data-input="bigchart-select" style="cursor:pointer;"></select>
-        </div>
-        <canvas class="progress-canvas" id="bigchart" style="height:170px;"></canvas>
-        <p class="goals-footnote" id="bigchart-note" style="margin:6px 0 0;"></p>
-      </section>
-
       <div class="content-grid">
         <section class="panel history-panel" aria-labelledby="history-heading">
           <h2 id="history-heading" style="margin-bottom:14px;">Ledger</h2>
@@ -856,8 +847,13 @@
         </section>
 
         <aside class="panel progress-panel" aria-labelledby="progress-heading">
-          <h2 id="progress-heading" style="margin-bottom:14px;">Progress</h2>
-          <div id="progress-list" class="progress-list"></div>
+          <div class="panel-head-row">
+            <h2 id="progress-heading" style="margin-bottom:14px;">Progress</h2>
+            <select class="unit-toggle" id="bigchart-select" data-input="bigchart-select" style="cursor:pointer;"></select>
+          </div>
+          <canvas class="progress-canvas" id="bigchart" style="height:170px;"></canvas>
+          <p class="goals-footnote" id="bigchart-note" style="margin:6px 0 10px;"></p>
+          <details class="routines-details"><summary>All exercises at a glance</summary><div class="routines-body"><div id="progress-list" class="progress-list"></div></div></details>
         </aside>
       </div>
 
@@ -13965,6 +13961,10 @@ Place this code in the empty space below. */
     }
 
     /* ---- change delegation (exercise type select — structural, re-render immediately) ---- */
+    document.body.addEventListener('toggle', function (e) {
+      var d = e.target;
+      if (d && d.open && d.querySelector && d.querySelector('#progress-list')) renderProgress();
+    }, true);
     document.body.addEventListener('change', function (e) {
       var t = e.target;
       if (t.getAttribute('data-input') === 'bigchart-select') {
