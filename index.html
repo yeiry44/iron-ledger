@@ -522,6 +522,25 @@
   .travel-itinerary-hours{ max-height:340px; overflow-y:auto; padding-right:2px; }
   .travel-email-item{ margin:0; padding:3px 0; font-size:12px; color:var(--ink); line-height:1.5; }
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
+  .pr-row{ display:flex; align-items:baseline; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
+  .pr-name{ flex:1; min-width:120px; font-size:13px; color:var(--ink); }
+  .pr-val{ font-size:13px; color:var(--ink); }
+  .pr-date{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-dim); }
+  .chal-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .chal-label{ width:120px; font-size:12.5px; color:var(--ink); flex:none; }
+  .chal-track{ flex:1; }
+  .chal-count{ font-size:12px; color:var(--ink-dim); width:36px; text-align:right; }
+  .gm-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+  .gm-head{ text-align:center; font-family:var(--font-mono); font-size:10px; color:var(--ink-dim); }
+  .gm-cell{ display:flex; flex-direction:column; align-items:center; justify-content:center; aspect-ratio:1; min-height:38px; border:1px solid var(--line); border-radius:8px; cursor:pointer; font-size:12px; color:var(--ink); padding:0;
+    background:color-mix(in srgb, var(--accent) var(--p,0%), var(--surface)); }
+  .gm-cell small{ font-family:var(--font-mono); font-size:8.5px; opacity:.75; }
+  .gm-cell.is-empty{ background:var(--surface); border-style:dashed; color:var(--ink-dim); }
+  .gm-cell.is-today{ outline:2px solid var(--accent); outline-offset:1px; }
+  .gm-cell:disabled{ opacity:.35; cursor:default; }
+  .habit-days{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+  .habit-day{ display:flex; align-items:center; gap:2px; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim); }
+  .is-hidden-habit{ opacity:.5; }
   .hub-row{ margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed var(--line); }
   .hub-row-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
   .hub-row em{ font-style:normal; color:var(--ink-dim); font-size:11.5px; }
@@ -781,6 +800,25 @@
         </div>
         <div class="goals-mobile" id="goals-mobile"></div>
       </section>
+
+      <section class="panel" id="goals-month-panel">
+        <div class="panel-head-row">
+          <h2 style="font-size:16px;">🗓 Monthly View</h2>
+          <div class="goals-week-nav">
+            <button type="button" class="week-nav-btn" data-action="goals-month-prev" aria-label="Previous month">‹</button>
+            <span class="goals-week-range" id="goals-month-label"></span>
+            <button type="button" class="week-nav-btn" data-action="goals-month-next" aria-label="Next month">›</button>
+          </div>
+        </div>
+        <div id="goals-month"></div>
+      </section>
+
+      <section class="panel">
+        <details class="routines-details">
+          <summary>✎ Edit my habits &amp; reminders</summary>
+          <div class="routines-body"><div id="habits-editor"></div></div>
+        </details>
+      </section>
     </div>
 
     <div class="page" data-page="exercise" id="page-exercise">
@@ -796,6 +834,11 @@
         <div class="schedule-scroll">
           <div class="schedule-grid" id="schedule-grid"></div>
         </div>
+      </section>
+
+      <section class="panel" id="challenge-panel">
+        <h2 style="font-size:16px;margin-bottom:8px;">🏁 Weekly Challenge with your sister</h2>
+        <div id="challenge-body"></div>
       </section>
 
       <section class="panel today-panel" aria-labelledby="today-heading">
@@ -829,6 +872,20 @@
         </form>
         <canvas class="progress-canvas" id="measure-chart" style="height:110px;"></canvas>
         <div id="measure-list" class="measure-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2 style="font-size:16px;margin-bottom:8px;">🏆 Personal Records</h2>
+        <div id="pr-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head-row">
+          <h2 style="font-size:16px;">📈 Progress Chart</h2>
+          <select class="unit-toggle" id="bigchart-select" data-input="bigchart-select" style="cursor:pointer;"></select>
+        </div>
+        <canvas class="progress-canvas" id="bigchart" style="height:170px;"></canvas>
+        <p class="goals-footnote" id="bigchart-note" style="margin:6px 0 0;"></p>
       </section>
 
       <div class="content-grid">
@@ -10101,6 +10158,10 @@ Place this code in the empty space below. */
       ['bookingItems', 'packingList', 'flights', 'spending'].forEach(function (k) { if (!Array.isArray(trv[k])) trv[k] = []; });
       if (!trv.currency || typeof trv.currency !== 'object') trv.currency = { code: '', rate: null };
     });
+    if (!state.habitConfig || typeof state.habitConfig !== 'object') state.habitConfig = {};
+    if (!state.habitConfig.overrides || typeof state.habitConfig.overrides !== 'object') state.habitConfig.overrides = {};
+    if (!Array.isArray(state.habitConfig.custom)) state.habitConfig.custom = [];
+    if (!state.challenge || typeof state.challenge !== 'object') state.challenge = { goal: 3 };
     if (!state.readingGoal || typeof state.readingGoal !== 'object') state.readingGoal = { target: 4 };
     ['currentlyReading', 'toRead', 'bookNotes'].forEach(function (k) { if (!Array.isArray(state[k])) state[k] = []; });
     // Her "usual" starting lists for a new trip — editable via "Save as my usual list" on a trip
@@ -10240,6 +10301,42 @@ Place this code in the empty space below. */
       'Unit 7, Lesson 1', 'Unit 7, Lesson 2', 'Unit 7, Lesson 3', 'Unit 7, Lesson 4',
       'Unit 8, Lesson 1', 'Unit 8, Lesson 2', 'Unit 8, Lesson 3', 'Unit 8, Lesson 4'
     ];
+    /* ---- editable habits: GOAL_DEFS above is the built-in set; state.habitConfig layers her edits
+       (renames, targets, active days, hidden habits, reminders) and her own custom habits on top.
+       GOAL_DEFS is rebuilt IN PLACE so every existing reference keeps working. ---- */
+    var BASE_GOAL_DEFS = GOAL_DEFS.map(function (g) { return Object.assign({}, g); });
+    function effectiveHabitDefs() {
+      var cfg = state.habitConfig;
+      var list = BASE_GOAL_DEFS.map(function (b) {
+        var o = cfg.overrides[b.id] || {};
+        var g = Object.assign({}, b);
+        if (o.label) g.label = o.label;
+        if (o.target != null && (g.type === 'weekly' || g.type === 'numeric')) g.target = o.target;
+        if (o.bottles && g.bottles) { g.bottles = o.bottles; if (!o.label) g.label = 'Water (' + o.bottles + ' bottles)'; }
+        if (Array.isArray(o.excludeDays) && !b.hasNote) g.excludeDays = o.excludeDays;
+        g.remind = o.remind || '';
+        g.hidden = !!o.hidden;
+        return g;
+      });
+      cfg.custom.forEach(function (c) {
+        list.push({ id: c.id, label: c.label || 'Habit', type: c.type === 'weekly' ? 'weekly' : 'daily', target: Number(c.target) || 3, excludeDays: Array.isArray(c.excludeDays) ? c.excludeDays : [], remind: c.remind || '', custom: true, hidden: false });
+      });
+      return list;
+    }
+    function rebuildGoalDefs() {
+      GOAL_DEFS.length = 0;
+      effectiveHabitDefs().forEach(function (g) { if (!g.hidden) GOAL_DEFS.push(g); });
+    }
+    function habitCfgFor(id) {
+      var c = state.habitConfig.custom.find(function (x) { return x.id === id; });
+      if (c) return c;
+      return state.habitConfig.overrides[id] || (state.habitConfig.overrides[id] = {});
+    }
+    function goalValueDone(g, v) {
+      if (g.type === 'numeric') return v !== null && v !== '' && v !== undefined && Number(v) >= g.target;
+      if (g.bottles) return Number(v) >= g.bottles;
+      return !!v;
+    }
     var FRENCH_PRACTICE_DAYS = [0, 2, 4]; // Mon, Wed, Fri — must match the french goal's excludeDays above
     function assignBabbelWeek(wk) {
       var fdef = GOAL_DEFS.find(function (g) { return g.id === 'french'; });
@@ -11006,7 +11103,7 @@ Place this code in the empty space below. */
         for (var i = 0; i < 7; i++) {
           if (g.excludeDays && g.excludeDays.indexOf(i) > -1) continue;
           totalApplicable++;
-          var v = wk.days[g.id][i];
+          var v = (wk.days[g.id] || blankGoalDayArray(g))[i];
           if (g.type === 'numeric') { if (v !== null && v !== '' && Number(v) >= g.target) totalDone++; }
           else if (g.bottles) { if (Number(v) >= g.bottles) totalDone++; }
           else if (v) totalDone++;
@@ -11114,7 +11211,7 @@ Place this code in the empty space below. */
       }).join('');
 
       var bodyRows = GOAL_DEFS.map(function (g) {
-        var arr = wk.days[g.id];
+        var arr = wk.days[g.id] || blankGoalDayArray(g);
         var noteArr = g.hasNote ? wk.notes[g.id] : null;
         var cells = '';
         var doneCount = 0, applicableCount = 0;
@@ -11152,7 +11249,7 @@ Place this code in the empty space below. */
         }).join('');
         var dayRows = GOAL_DEFS.map(function (g) {
           if (g.excludeDays && g.excludeDays.indexOf(selDay) > -1) return '';
-          var arr = wk.days[g.id];
+          var arr = wk.days[g.id] || blankGoalDayArray(g);
           var noteArr = g.hasNote ? wk.notes[g.id] : null;
           var res = goalDayControl(g, selDay, arr, noteArr);
           var labelHTML = '<span class="goal-icon">' + goalIconSVG(g.id) + '</span><span class="goal-label-text">' + escapeHtml(g.label) + '</span>';
@@ -11162,7 +11259,94 @@ Place this code in the empty space below. */
       }
 
       renderGoalsScore(wk, isLoadingWeek);
+      renderGoalsMonth();
     }
+
+    /* ---- monthly view: one cell per day, shaded by how much of that day's habits got done ---- */
+    var goalsMonthOffset = 0; // ephemeral UI state — months back from the current one
+    function habitDayStats(d) {
+      var wk = getGoalWeek(isoFromDate(mondayOfDate(d)));
+      var idx = mondayIndex(d), applicable = 0, done = 0;
+      GOAL_DEFS.forEach(function (g) {
+        if (g.excludeDays && g.excludeDays.indexOf(idx) > -1) return;
+        applicable++;
+        var arr = wk && wk.days[g.id];
+        if (arr && goalValueDone(g, arr[idx])) done++;
+      });
+      return { hasData: !!wk, applicable: applicable, done: done, pct: applicable ? done / applicable : 0 };
+    }
+    function renderGoalsMonth() {
+      var el = document.getElementById('goals-month');
+      if (!el) return;
+      var now = new Date(); now.setHours(0, 0, 0, 0);
+      var first = new Date(now.getFullYear(), now.getMonth() + goalsMonthOffset, 1);
+      var lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      document.getElementById('goals-month-label').textContent = first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      var html = GOAL_DAY_LABELS.map(function (l) { return '<span class="gm-head">' + l.charAt(0) + '</span>'; }).join('');
+      for (var b = 0; b < mondayIndex(first); b++) html += '<span></span>';
+      var sum = 0, tracked = 0, perfect = 0;
+      for (var n = 1; n <= lastDay; n++) {
+        var d = new Date(first.getFullYear(), first.getMonth(), n);
+        var future = d > now;
+        var st = future ? null : habitDayStats(d);
+        var showPct = st && st.hasData && st.applicable;
+        if (showPct) { sum += st.pct; tracked++; if (st.done === st.applicable) perfect++; }
+        var ws = isoFromDate(mondayOfDate(d));
+        html += '<button type="button" class="gm-cell' + (showPct ? '' : ' is-empty') + (d.getTime() === now.getTime() ? ' is-today' : '') + '"' + (showPct ? ' style="--p:' + Math.round(st.pct * 100) + '%"' : '') +
+          ' data-action="goals-jump-week" data-week="' + ws + '" data-day="' + mondayIndex(d) + '"' + (future ? ' disabled' : '') + ' title="' + (showPct ? Math.round(st.pct * 100) + '% done' : 'No data') + '">' +
+          '<span>' + n + '</span>' + (showPct ? '<small>' + Math.round(st.pct * 100) + '%</small>' : '') + '</button>';
+      }
+      el.innerHTML = '<div class="gm-grid">' + html + '</div>' +
+        '<p class="goals-footnote" style="margin:10px 0 0;">' + (tracked ? 'Average <strong>' + Math.round(sum / tracked * 100) + '%</strong> across ' + tracked + ' tracked day' + (tracked === 1 ? '' : 's') + ' · <strong>' + perfect + '</strong> perfect day' + (perfect === 1 ? '' : 's') + '. ' : 'No tracked days this month. ') + 'Darker = more habits done. Tap a day to open its week.</p>';
+    }
+
+    /* ---- edit habits UI ---- */
+    function renderHabitsEditor() {
+      var el = document.getElementById('habits-editor');
+      if (!el) return;
+      var hasNotif = typeof Notification !== 'undefined';
+      var rows = effectiveHabitDefs().map(function (g) {
+        var days = GOAL_DAY_LABELS.map(function (l, i) {
+          var on = !(g.excludeDays && g.excludeDays.indexOf(i) > -1);
+          return '<label class="habit-day"><input type="checkbox" data-input="habit-day" data-hid="' + g.id + '" data-day="' + i + '"' + (on ? ' checked' : '') + (g.hasNote ? ' disabled' : '') + '>' + l.charAt(0) + '</label>';
+        }).join('');
+        var targetField = g.bottles ? ['bottles', g.bottles, 'bottles/day'] : (g.type === 'weekly' ? ['target', g.target, 'times/week'] : (g.type === 'numeric' ? ['target', g.target, 'steps'] : null));
+        return '<div class="hub-row' + (g.hidden ? ' is-hidden-habit' : '') + '">' +
+          '<div class="hub-row-head"><input type="text" class="trip-item-text" data-input="habit-field" data-field="label" data-hid="' + g.id + '" value="' + attr(g.label) + '" maxlength="40">' +
+          (g.custom ? '<button type="button" class="trip-del" data-action="habit-delete" data-hid="' + g.id + '" aria-label="Delete habit">×</button>'
+            : '<button type="button" class="hub-btn" data-action="habit-hide" data-hid="' + g.id + '">' + (g.hidden ? 'Show' : 'Hide') + '</button>') + '</div>' +
+          '<div class="habit-days">' + days + (g.hasNote ? '<span class="goals-footnote" style="margin:0 0 0 6px;">days follow the plan</span>' : '') + '</div>' +
+          '<div class="trip-currency" style="margin-top:6px;">' +
+          (targetField ? '<span>Goal</span><input type="number" min="1" class="trip-amt" data-input="habit-field" data-field="' + targetField[0] + '" data-hid="' + g.id + '" value="' + attr(targetField[1]) + '"><span>' + targetField[2] + '</span>' : '') +
+          '<span>⏰ Remind me at</span><input type="time" class="trip-amt" style="width:110px;" data-input="habit-field" data-field="remind" data-hid="' + g.id + '" value="' + attr(g.remind || '') + '"></div></div>';
+      }).join('');
+      el.innerHTML = rows +
+        hubAddForm('habit', '<input type="text" name="title" placeholder="New habit (e.g. Stretch, Meditate)" maxlength="40"><select name="type"><option value="daily">Every day</option><option value="weekly">Times per week</option></select><input type="number" name="target" min="1" max="7" placeholder="x/wk" class="trip-amt" style="width:70px;">', '+ Add habit') +
+        '<p class="goals-footnote" style="margin:10px 0 0;">Reminders pop up while the Diary is open (and as a phone notification if you allow it) — a web page can\'t buzz you when it\'s fully closed. ' +
+        (hasNotif && Notification.permission !== 'granted' ? '<button type="button" class="hub-btn" style="margin-left:0;" data-action="habit-notify">Allow notifications</button>' : (hasNotif ? 'Notifications are on ✓' : '')) + '</p>';
+    }
+    function remindedKey() { return 'habitReminded' + todayISO(); }
+    function checkHabitReminders() {
+      var now = new Date();
+      var hhmm = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      var idx = mondayIndex(now);
+      var wk = getGoalWeek(currentWeekStart());
+      var sent = [];
+      try { sent = JSON.parse(localStorage.getItem(remindedKey()) || '[]'); } catch (e) {}
+      var fired = false;
+      GOAL_DEFS.forEach(function (g) {
+        if (!g.remind || g.remind > hhmm || sent.indexOf(g.id) > -1) return;
+        if (g.excludeDays && g.excludeDays.indexOf(idx) > -1) return;
+        var arr = wk && wk.days[g.id];
+        if (arr && goalValueDone(g, arr[idx])) { sent.push(g.id); fired = true; return; }
+        sent.push(g.id); fired = true;
+        showToast('⏰ ' + g.label);
+        try { if (typeof Notification !== 'undefined' && Notification.permission === 'granted') new Notification('Diary reminder', { body: g.label }); } catch (e) {}
+      });
+      if (fired) { try { localStorage.setItem(remindedKey(), JSON.stringify(sent)); } catch (e) {} }
+    }
+    setInterval(checkHabitReminders, 60000);
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'visible') checkHabitReminders(); });
 
     function renderRoutineChips() {
       var el = document.getElementById('routine-chips');
@@ -11294,6 +11478,110 @@ Place this code in the empty space below. */
       });
     }
 
+    /* ---- personal records, big progress chart, weekly challenge with your sister ---- */
+    function mySessionsList() { return state.sessions; }
+    function otherSessionsList() { return Array.isArray(state.partnerSessions) ? state.partnerSessions : []; }
+    function computePRs(sessions) {
+      var best = {};
+      sessions.forEach(function (sess) {
+        (sess.exercises || []).forEach(function (ex) {
+          if (ex.type === 'strength') {
+            (ex.sets || []).forEach(function (s) {
+              if (!s.done) return;
+              var w = Number(s.weight), r = Number(s.reps);
+              if (!(w > 0) || !(r > 0)) return;
+              var b = best[ex.name];
+              if (!b || w > b.weight || (w === b.weight && r > b.reps)) best[ex.name] = { name: ex.name, kind: 'strength', weight: w, reps: r, date: sess.date };
+            });
+          } else if (ex.type === 'cardio' && ex.done) {
+            var dist = Number(ex.distance) || 0;
+            if (!(dist > 0)) return;
+            var cb = best[ex.name];
+            if (!cb || dist > cb.distance) best[ex.name] = { name: ex.name, kind: 'cardio', distance: dist, date: sess.date };
+          }
+        });
+      });
+      return Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    }
+    function renderPRs() {
+      var el = document.getElementById('pr-list');
+      if (!el) return;
+      var prs = computePRs(mySessionsList());
+      if (!prs.length) { el.innerHTML = '<p class="empty-note">Log a set with weight and reps (and check it off) to start collecting records.</p>'; return; }
+      var distUnit = state.unit === 'kg' ? 'km' : 'mi';
+      el.innerHTML = prs.map(function (p) {
+        var isNew = daysBetween(p.date, todayISO()) <= 7;
+        return '<div class="pr-row"><span class="pr-name">' + escapeHtml(p.name) + (isNew ? ' <span class="pr-badge">NEW</span>' : '') + '</span>' +
+          '<span class="num pr-val">' + (p.kind === 'cardio' ? fmtNum(p.distance) + ' ' + distUnit : fmtNum(p.weight) + ' ' + state.unit + ' × ' + p.reps) + '</span>' +
+          '<span class="pr-date">' + escapeHtml(formatHeading(p.date)) + '</span></div>';
+      }).join('');
+    }
+    var bigChartName = null; // ephemeral UI state — which exercise the big chart shows
+    function seriesOfSessions(sessions, name) {
+      var byDate = {};
+      sessions.forEach(function (sess) {
+        var ex = (sess.exercises || []).find(function (e) { return e.name === name && e.type === 'strength'; });
+        if (!ex) return;
+        var b = bestSetOf(ex);
+        if (b && (!byDate[sess.date] || b.est > byDate[sess.date].est)) byDate[sess.date] = b;
+      });
+      return Object.keys(byDate).sort().map(function (d) { return { date: d, weight: byDate[d].weight, reps: byDate[d].reps, est: byDate[d].est }; });
+    }
+    function renderBigChart() {
+      var sel = document.getElementById('bigchart-select');
+      var canvas = document.getElementById('bigchart');
+      var note = document.getElementById('bigchart-note');
+      if (!sel || !canvas) return;
+      var sessions = mySessionsList(), names = {};
+      sessions.forEach(function (sess) { (sess.exercises || []).forEach(function (ex) { if (ex.type === 'strength' && bestSetOf(ex)) names[ex.name] = 1; }); });
+      var list = Object.keys(names).sort();
+      if (!list.length) { sel.innerHTML = ''; note.textContent = 'Check off a set with weight and reps to see a chart here.'; canvas.style.display = 'none'; return; }
+      canvas.style.display = '';
+      if (!bigChartName || list.indexOf(bigChartName) === -1) bigChartName = list[0];
+      sel.innerHTML = list.map(function (n) { return '<option value="' + attr(n) + '"' + (n === bigChartName ? ' selected' : '') + '>' + escapeHtml(n) + '</option>'; }).join('');
+      var series = seriesOfSessions(sessions, bigChartName);
+      drawSparkline(canvas, series);
+      if (series.length < 2) { note.textContent = 'Log this exercise on one more day to see a trend.'; return; }
+      var f = series[0], l = series[series.length - 1], diff = l.est - f.est;
+      note.innerHTML = 'Estimated 1-rep max: <strong>' + fmtNum(Math.round(f.est)) + '</strong> (' + escapeHtml(formatHeading(f.date)) + ') → <strong>' + fmtNum(Math.round(l.est)) + ' ' + state.unit + '</strong> (' + escapeHtml(formatHeading(l.date)) + ') · ' + (diff >= 0 ? '+' : '') + fmtNum(Math.round(diff)) + ' ' + state.unit;
+    }
+    function challengeWeekCount(sessions, weekStartISO) {
+      var start = parseLocalISO(weekStartISO), dates = {};
+      var days = {};
+      for (var i = 0; i < 7; i++) { var d = new Date(start); d.setDate(d.getDate() + i); days[isoFromDate(d)] = 1; }
+      sessions.forEach(function (s) {
+        if (days[s.date] && (s.manualEntry || (s.exercises || []).some(hasAnyProgress))) dates[s.date] = 1;
+      });
+      return Object.keys(dates).length;
+    }
+    function challengeStreak(sessions, goal) {
+      if (!(goal > 0)) return 0;
+      var cur = parseLocalISO(currentWeekStart()), cnt = 0, n = 0;
+      function ws(k) { var d = new Date(cur); d.setDate(d.getDate() - 7 * k); return isoFromDate(d); }
+      if (challengeWeekCount(sessions, ws(0)) < goal) n = 1;
+      while (n < 104 && challengeWeekCount(sessions, ws(n)) >= goal) { cnt++; n++; }
+      return cnt;
+    }
+    function renderChallenge() {
+      var el = document.getElementById('challenge-body');
+      if (!el) return;
+      var goal = Math.max(1, Number(state.challenge && state.challenge.goal) || 3);
+      var ws = currentWeekStart();
+      var me = challengeWeekCount(mySessionsList(), ws), them = challengeWeekCount(otherSessionsList(), ws);
+      function bar(label, n) {
+        var pct = Math.min(100, Math.round(n / goal * 100));
+        return '<div class="chal-row"><span class="chal-label">' + escapeHtml(label) + '</span><div class="progress-bar-track chal-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div><span class="num chal-count">' + n + '/' + goal + '</span></div>';
+      }
+      var msg = me === them ? (me ? 'Neck and neck this week 🤝' : 'Fresh week — first one to log a workout takes the lead!') : (me > them ? 'You\'re ahead by ' + (me - them) + ' 💪' : PARTNER_VIEW_LABEL + ' is ahead by ' + (them - me) + ' — time to catch up! 🏃‍♀️');
+      var s1 = challengeStreak(mySessionsList(), goal), s2 = challengeStreak(otherSessionsList(), goal);
+      el.innerHTML = bar('You', me) + bar(PARTNER_VIEW_LABEL, them) +
+        '<p class="goals-footnote" style="margin:8px 0 4px;">' + msg + '</p>' +
+        '<p class="goals-footnote" style="margin:0 0 8px;">🔥 Streak of weeks hitting the goal — you: <strong>' + s1 + '</strong> · ' + escapeHtml(PARTNER_VIEW_LABEL) + ': <strong>' + s2 + '</strong></p>' +
+        CHALLENGE_GOAL_EDITOR(goal);
+    }
+    function CHALLENGE_GOAL_EDITOR(goal) {
+      return '<div class="trip-currency" style="margin-top:0;"><span>Weekly goal</span><input type="number" min="1" max="7" class="trip-amt" data-input="challenge-goal" value="' + goal + '"><span>workouts each (Mon–Sun)</span></div>';
+    }
     function exerciseOptionsHTML() {
       var names = new Set();
       state.routines.forEach(function (r) { r.exercises.forEach(function (ex) { if (ex.name) names.add(ex.name); }); });
@@ -13279,6 +13567,7 @@ Place this code in the empty space below. */
       renderCalendarFormWeekdayPicker();
     }
     function renderAll() {
+      rebuildGoalDefs();
       ensureTodayDefault();
       renderHeader();
       renderMotivation();
@@ -13287,6 +13576,7 @@ Place this code in the empty space below. */
       renderPartnerView();
       renderSchedule();
       renderGoals();
+      renderHabitsEditor();
       renderDailySchedule();
       renderRoutineChips();
       renderToday();
@@ -13294,6 +13584,9 @@ Place this code in the empty space below. */
       renderRoutines();
       renderHistory();
       renderProgress();
+      renderPRs();
+      renderBigChart();
+      renderChallenge();
       renderNutrition();
       renderFinance();
       renderTravelBeauty();
@@ -13618,7 +13911,7 @@ Place this code in the empty space below. */
       } else if (action === 'go-page') {
         state.activePage = btn.getAttribute('data-page');
         renderPageNav();
-        renderProgress();
+        renderProgress(); renderPRs(); renderBigChart(); renderChallenge();
         renderMeasurements();
         scheduleSave();
 
@@ -13697,6 +13990,30 @@ Place this code in the empty space below. */
       } else if (action === 'travel-status') {
         var trv = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (trv) { trv.status = btn.getAttribute('data-status'); renderTravel(); scheduleSave(); }
+
+      } else if (action === 'habit-hide') {
+        var hh = habitCfgFor(btn.getAttribute('data-hid')); hh.hidden = !hh.hidden;
+        rebuildGoalDefs(); renderGoals(); renderHabitsEditor(); scheduleSave();
+
+      } else if (action === 'habit-delete') {
+        var hdi = state.habitConfig.custom.findIndex(function (x) { return x.id === btn.getAttribute('data-hid'); });
+        if (hdi > -1) { state.habitConfig.custom.splice(hdi, 1); rebuildGoalDefs(); renderGoals(); renderHabitsEditor(); scheduleSave(); }
+
+      } else if (action === 'habit-notify') {
+        if (typeof Notification !== 'undefined') Notification.requestPermission().then(function () { renderHabitsEditor(); });
+
+      } else if (action === 'goals-month-prev') {
+        goalsMonthOffset--; renderGoalsMonth();
+
+      } else if (action === 'goals-month-next') {
+        if (goalsMonthOffset < 0) { goalsMonthOffset++; renderGoalsMonth(); }
+
+      } else if (action === 'goals-jump-week') {
+        var jw = btn.getAttribute('data-week');
+        goalsViewWeekStart = jw === currentWeekStart() ? null : jw;
+        goalsMobileDay = Number(btn.getAttribute('data-day'));
+        renderGoals();
+        var gh = document.getElementById('goals-heading'); if (gh && gh.scrollIntoView) gh.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
       } else if (action === 'hub-del') {
         var hdList = state[btn.getAttribute('data-list')];
@@ -14083,6 +14400,24 @@ Place this code in the empty space below. */
           scheduleSaveDebounced();
         }
 
+      } else if (kind === 'habit-field' || kind === 'habit-day') {
+        var hid = t.getAttribute('data-hid');
+        var hcfg = habitCfgFor(hid);
+        if (kind === 'habit-day') {
+          var effDef = effectiveHabitDefs().find(function (g) { return g.id === hid; });
+          var ex = (effDef && effDef.excludeDays ? effDef.excludeDays : []).slice();
+          var dn = Number(t.getAttribute('data-day')), at = ex.indexOf(dn);
+          if (t.checked && at > -1) ex.splice(at, 1);
+          if (!t.checked && at === -1) ex.push(dn);
+          hcfg.excludeDays = ex;
+        } else {
+          var hf2 = t.getAttribute('data-field');
+          if (hf2 === 'label') hcfg.label = t.value.trim() || undefined;
+          else if (hf2 === 'remind') hcfg.remind = t.value || '';
+          else hcfg[hf2] = Math.max(1, Number(t.value) || 1);
+        }
+        rebuildGoalDefs(); renderGoals(); scheduleSaveDebounced();
+
       } else if (kind === 'reading-goal') {
         state.readingGoal.target = Math.max(0, Number(t.value) || 0);
         scheduleSaveDebounced(); renderReadingGoalProgress();
@@ -14183,7 +14518,12 @@ Place this code in the empty space below. */
     /* ---- change delegation (exercise type select — structural, re-render immediately) ---- */
     document.body.addEventListener('change', function (e) {
       var t = e.target;
-      if (t.getAttribute('data-input') === 'exercise-type') {
+      if (t.getAttribute('data-input') === 'bigchart-select') {
+        bigChartName = t.value; renderBigChart();
+      } else if (t.getAttribute('data-input') === 'challenge-goal') {
+        state.challenge = { goal: Math.min(7, Math.max(1, Number(t.value) || 3)) };
+        renderChallenge(); scheduleSave();
+      } else if (t.getAttribute('data-input') === 'exercise-type') {
         var routine = getRoutine(t.getAttribute('data-routine'));
         var rex = routine && findRoutineExercise(routine, t.getAttribute('data-exercise'));
         if (rex) {
@@ -14240,6 +14580,11 @@ Place this code in the empty space below. */
         var hk = form.getAttribute('data-hub-form');
         var hEl = form.elements;
         var hTitle = hEl.title ? hEl.title.value.trim() : '';
+        if (hk === 'habit' && hTitle) {
+          state.habitConfig.custom.push({ id: uid('h'), label: hTitle, type: hEl.type.value, target: Math.min(7, Math.max(1, Number(hEl.target.value) || 3)), excludeDays: [], remind: '' });
+          rebuildGoalDefs(); renderGoals(); renderHabitsEditor(); scheduleSave();
+          return;
+        }
         if (hk === 'reading' && hTitle) state.currentlyReading.push({ id: uid('cr'), title: hTitle, author: hEl.author.value.trim(), totalPages: Number(hEl.pages.value) || 0, pagesRead: 0, started: todayISO() });
         else if (hk === 'toread' && hTitle) state.toRead.push({ id: uid('tr'), title: hTitle, author: hEl.author.value.trim() });
         else if (hk === 'note' && hEl.text.value.trim()) state.bookNotes.push({ id: uid('bn'), book: hEl.book.value.trim(), kind: hEl.kind.value, text: hEl.text.value.trim(), date: todayISO() });
@@ -14528,7 +14873,8 @@ Place this code in the empty space below. */
       }, true);
     }
 
-    /* ---- collapsible panels: each .panel becomes a click-to-collapse box. Panel shells are
+    renderAll();
+    checkHabitReminders();
        static HTML (only inner IDs get re-rendered), so this runs once and the DOM restructuring
        it does survives every later renderAll(). Collapse state persists per-device in
        localStorage, keyed by page + heading text since panels don't all have stable ids. ---- */
