@@ -533,6 +533,20 @@
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
   .travel-card details input, .travel-card details textarea, .travel-card details select,
   .hub-sec input, .hub-sec textarea, .hub-sec select{ background:transparent !important; }
+  .cal-cell{ display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:3px; aspect-ratio:1; min-height:44px; border:1px solid var(--line); border-radius:10px; background:color-mix(in srgb, var(--accent) calc(var(--p, 0%) * .6), var(--surface)); color:var(--ink); font-size:12.5px; padding:5px 0 0; cursor:pointer; }
+  .cal-cell.is-today{ outline:2px solid var(--accent); outline-offset:1px; }
+  .cal-cell.is-selected{ border-color:var(--ink); border-width:2px; }
+  .cal-cell.has-trip{ box-shadow:inset 0 0 0 2px var(--good); }
+  .cal-dots{ display:flex; gap:3px; flex-wrap:wrap; justify-content:center; min-height:7px; }
+  .cal-dot{ display:inline-block; width:7px; height:7px; border-radius:50%; }
+  .cal-events{ background:#5b6f9e; }
+  .cal-workouts{ background:var(--accent); }
+  .cal-workouts.is-planned{ background:transparent; border:1.5px solid var(--accent); }
+  .cal-sister{ background:#8a5a8f; }
+  .cal-agenda-title{ margin:0 0 10px; font-size:15px; font-weight:600; color:var(--ink); }
+  .cal-agenda-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px dashed var(--line); font-size:13.5px; color:var(--ink); }
+  .cal-agenda-row.is-planned{ color:var(--ink-dim); }
+  .cal-agenda-time{ width:70px; flex:none; font-size:11.5px; color:var(--ink-dim); }
   .today-hero h2{ font-family:var(--font-display, serif); font-style:italic; font-size:26px; margin:0; color:var(--ink); }
   .today-hero p{ margin:2px 0 14px; color:var(--ink-dim); font-size:13px; }
   .today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
@@ -10113,18 +10127,11 @@ Place this code in the empty space below. */
       </section>
     </div>
 
+    <div class="page" data-page="calendar" id="page-calendar"><div id="cal-root"></div></div>
+
     <div class="page" data-page="bucketlist" id="page-bucketlist">
       <section class="panel">
-        <div class="panel-head-row">
-          <h2 style="font-size:16px;">📅 Quarterly Calendar</h2>
-          <div class="goals-week-nav">
-            <button type="button" class="week-nav-btn" data-action="quarter-prev" aria-label="Previous quarter">‹</button>
-            <span class="goals-week-range" id="quarter-range"></span>
-            <button type="button" class="week-nav-btn" data-action="quarter-next" aria-label="Next quarter">›</button>
-          </div>
-        </div>
-        <p class="goals-footnote" style="margin:0 0 14px;">Bucket list items with a repeat pattern or target month land here automatically — hover a day for what's on it.</p>
-        <div id="quarter-grid" class="quarter-grid"></div>
+        <p class="goals-footnote" style="margin:0;">Your calendar moved to the <strong>🗓 Calendar</strong> page, where events, trips, workouts and bucket-list items all show together. Add recurring plans below.</p>
       </section>
 
       <section class="panel">
@@ -10356,6 +10363,7 @@ Place this code in the empty space below. */
     var USER_PROFILE ={ heightIn: 63, age: 25, sex: 'female', startWeight: 195, weeklyLossLowLb: 1, weeklyLossHighLb: 2 };
     var PAGES = [
       { id: 'today', label: '🏠 Today' },
+      { id: 'calendar', label: '🗓 Calendar' },
       { id: 'habits', label: '🌸 Habit Tracker' },
       { id: 'exercise', label: '🏋️ Exercise' },
       { id: 'nutrition', label: '🥗 Nutrition' },
@@ -11889,6 +11897,19 @@ Place this code in the empty space below. */
         cards.push(todayCardHTML('Next trip', '✈️', tBody + tpl, ['travel', 'travel', 'planned']));
       }
 
+      // coming up: events, trip starts and bucket-list items in the next week
+      var coming = upcomingItems(7, 5);
+      var todaysItems = calItemsFor(todayISO()).filter(function (it) { return it.type === 'events' || it.type === 'trips'; });
+      if (coming.length || todaysItems.length) {
+        cards.push(todayCardHTML('Coming up', '🗓', todaysItems.map(function (it) {
+          return '<div class="today-rem is-due"><span class="num">Today' + (it.time ? ' ' + escapeHtml(calTimeLabel(it.time)) : '') + '</span> ' + it.icon + ' ' + escapeHtml(it.label) + '</div>';
+        }).join('') + coming.map(function (c) {
+          var dd = parseLocalISO(c.date), diff = daysBetween(todayISO(), c.date);
+          var when = diff === 1 ? 'Tomorrow' : dd.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+          return '<div class="today-rem"><span class="num">' + escapeHtml(when) + (c.item.time ? ' ' + escapeHtml(calTimeLabel(c.item.time)) : '') + '</span> ' + c.item.icon + ' ' + escapeHtml(c.item.label) + '</div>';
+        }).join(''), ['calendar']));
+      }
+
       // reading
       var cur = state.currentlyReading[0];
       var rBody = cur
@@ -11916,6 +11937,101 @@ Place this code in the empty space below. */
       try { cur = localStorage.getItem('diaryTheme') || 'auto'; } catch (e) {}
       try { localStorage.setItem('diaryTheme', order[(order.indexOf(cur) + 1) % 3]); } catch (e) {}
       applyTheme();
+    }
+    /* ---- one calendar for everything: events, trips, workouts (done + scheduled), your sister's workouts,
+       bucket-list items, and a shaded habit score per day. Tap a day for its agenda. ---- */
+    var calMonthOffset = 0, calSelected = null;
+    var CAL_FILTERS = [['events', 'Events'], ['trips', 'Trips'], ['workouts', 'Workouts'], ['sister', 'Sister'], ['habits', 'Habits']];
+    var calFilters = { events: true, trips: true, workouts: true, sister: true, habits: true };
+    try { var savedCal = JSON.parse(localStorage.getItem('diaryCalFilters') || 'null'); if (savedCal) calFilters = Object.assign(calFilters, savedCal); } catch (e) {}
+    function calSessionsOn(list, dateIso) {
+      return (list || []).filter(function (s) { return s.date === dateIso && (s.manualEntry || (s.exercises || []).some(hasAnyProgress)); });
+    }
+    function calItemsFor(dateIso) {
+      var items = [];
+      var weekday = parseLocalISO(dateIso).getDay(), monthKey = dateIso.slice(0, 7), today = todayISO();
+      state.calendarEvents.forEach(function (c) {
+        if (c.date === dateIso || (!c.date && c.weekdays.indexOf(weekday) !== -1 && (!c.month || c.month === monthKey))) {
+          items.push({ type: 'events', icon: '📅', label: c.title, time: c.startTime || '', id: c.id, removable: true, sort: c.startTime || '99:99' });
+        }
+      });
+      state.bucketList.forEach(function (b) {
+        if (b.weekdays.indexOf(weekday) !== -1 && (!b.targetMonth || b.targetMonth === monthKey)) items.push({ type: 'events', icon: '🪣', label: b.title + (b.done ? ' ✓' : ''), time: '', sort: '98:00' });
+      });
+      state.travel.forEach(function (t) {
+        if (!t.startDate || (t.status !== 'planned' && t.status !== 'visited')) return;
+        var end = t.endDate || t.startDate;
+        if (dateIso >= t.startDate && dateIso <= end) {
+          var dayN = daysBetween(t.startDate, dateIso) + 1, total = daysBetween(t.startDate, end) + 1;
+          items.push({ type: 'trips', icon: '✈️', label: t.place + (total > 1 ? ' · day ' + dayN + ' of ' + total : ''), time: '', sort: '00:00', status: t.status });
+        }
+      });
+      calSessionsOn(state.sessions, dateIso).forEach(function (s) { items.push({ type: 'workouts', icon: '🏋️', label: s.routineName, time: '', sort: '50:00', done: true }); });
+      if (dateIso >= today && !calSessionsOn(state.sessions, dateIso).length) {
+        var rt = getRoutine(state.schedule[weekday]);
+        if (rt) items.push({ type: 'workouts', icon: '🏋️', label: rt.name + ' (scheduled)', time: '', sort: '50:00', planned: true });
+      }
+      calSessionsOn(state.partnerSessions, dateIso).forEach(function (s) { items.push({ type: 'sister', icon: '👯', label: 'Your sister: ' + s.routineName, time: '', sort: '51:00', done: true }); });
+      return items.sort(function (a, b) { return a.sort < b.sort ? -1 : (a.sort > b.sort ? 1 : 0); });
+    }
+    function calTimeLabel(hhmm) {
+      if (!hhmm) return '';
+      var p = hhmm.split(':'), h = Number(p[0]);
+      return ((h % 12) || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM');
+    }
+    function renderCalendarPage() {
+      var el = document.getElementById('cal-root');
+      if (!el) return;
+      var now = new Date(); now.setHours(0, 0, 0, 0);
+      var first = new Date(now.getFullYear(), now.getMonth() + calMonthOffset, 1);
+      var lastDay = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate();
+      if (!calSelected) calSelected = todayISO();
+      var filterBar = '<div class="shelf-tabs">' + CAL_FILTERS.map(function (f) {
+        return '<button type="button" class="shelf-tab' + (calFilters[f[0]] ? ' is-active' : '') + '" data-action="cal-filter" data-filter="' + f[0] + '">' + f[1] + '</button>';
+      }).join('') + '</div>';
+      var cells = GOAL_DAY_LABELS.map(function (l) { return '<span class="gm-head">' + l.charAt(0) + '</span>'; }).join('');
+      for (var b = 0; b < mondayIndex(first); b++) cells += '<span></span>';
+      for (var n = 1; n <= lastDay; n++) {
+        var d = new Date(first.getFullYear(), first.getMonth(), n), iso = isoFromDate(d);
+        var items = calItemsFor(iso).filter(function (it) { return calFilters[it.type]; });
+        var dots = '', hasTrip = false;
+        var seen = {};
+        items.forEach(function (it) {
+          if (it.type === 'trips') { hasTrip = true; return; }
+          var key = it.type + (it.planned ? '-p' : '');
+          if (seen[key]) return; seen[key] = 1;
+          dots += '<i class="cal-dot cal-' + it.type + (it.planned ? ' is-planned' : '') + '"></i>';
+        });
+        var style = '';
+        if (calFilters.habits && d <= now) { var st = habitDayStats(d); if (st.hasData && st.applicable) style = ' style="--p:' + Math.round(st.pct * 100) + '%"'; }
+        cells += '<button type="button" class="cal-cell' + (style ? ' has-habit' : '') + (iso === todayISO() ? ' is-today' : '') + (iso === calSelected ? ' is-selected' : '') + (hasTrip ? ' has-trip' : '') + '" data-action="cal-select" data-date="' + iso + '"' + style + '><span>' + n + '</span><span class="cal-dots">' + dots + '</span></button>';
+      }
+      var agenda = calItemsFor(calSelected).filter(function (it) { return calFilters[it.type]; });
+      var selDate = parseLocalISO(calSelected);
+      var agendaHTML = '<h3 class="cal-agenda-title">' + escapeHtml(selDate.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })) + '</h3>' +
+        (agenda.map(function (it) {
+          return '<div class="cal-agenda-row' + (it.planned ? ' is-planned' : '') + (it.status === 'visited' ? ' is-planned' : '') + '"><span class="cal-agenda-time num">' + escapeHtml(calTimeLabel(it.time)) + '</span><span>' + it.icon + ' ' + escapeHtml(it.label) + '</span>' +
+            (it.removable ? '<button type="button" class="trip-del" data-action="cal-del-event" data-id="' + it.id + '" aria-label="Remove">×</button>' : '') + '</div>';
+        }).join('') || '<p class="goals-footnote">Nothing on this day.</p>') +
+        hubAddForm('calevent', '<input type="text" name="title" placeholder="Add an event" maxlength="60"><input type="time" name="time" class="trip-amt" style="width:120px;">', '+ Add');
+      var legend = '<p class="goals-footnote" style="margin:10px 0 0;"><i class="cal-dot cal-events"></i> events &nbsp; <i class="cal-dot cal-workouts"></i> workout &nbsp; <i class="cal-dot cal-workouts is-planned"></i> scheduled &nbsp; <i class="cal-dot cal-sister"></i> sister &nbsp; green outline = trip &nbsp; shading = habits done</p>';
+      el.innerHTML = '<section class="panel"><div class="panel-head-row"><h2 style="font-size:16px;">🗓 ' + escapeHtml(first.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })) + '</h2>' +
+        '<div class="goals-week-nav"><button type="button" class="week-nav-btn" data-action="cal-prev" aria-label="Previous month">‹</button><button type="button" class="week-nav-btn" data-action="cal-today" aria-label="This month" style="width:auto;padding:0 10px;font-size:11px;">Today</button><button type="button" class="week-nav-btn" data-action="cal-next" aria-label="Next month">›</button></div></div>' +
+        filterBar + '<div class="gm-grid">' + cells + '</div>' + legend + '</section>' +
+        '<section class="panel">' + agendaHTML + '</section>';
+    }
+    function upcomingItems(days, limit) {
+      var out = [];
+      for (var i = 1; i <= days && out.length < limit; i++) {
+        var d = new Date(); d.setDate(d.getDate() + i);
+        var iso = isoFromDate(d);
+        calItemsFor(iso).forEach(function (it) {
+          if (it.type === 'sister' || it.type === 'workouts') return;
+          if (it.type === 'trips' && it.label.indexOf('day ') > -1 && it.label.indexOf('day 1 ') === -1) return;
+          out.push({ date: iso, item: it });
+        });
+      }
+      return out.slice(0, limit);
     }
     function renderPageNav() {
       var el = document.getElementById('page-nav');
@@ -13969,6 +14085,7 @@ Place this code in the empty space below. */
     function renderQuarterCalendar() {
       var rangeEl = document.getElementById('quarter-range');
       var el = document.getElementById('quarter-grid');
+      renderCalendarPage(); renderCalendarEventsList(); renderCalendarFormWeekdayPicker();
       if (!el || !rangeEl) return;
       var months = quarterMonths(quarterOffset);
       var qNum = Math.floor((Number(months[0].split('-')[1]) - 1) / 3) + 1;
@@ -14346,6 +14463,27 @@ Place this code in the empty space below. */
         state.foodLog[todayISO()] = fdList.filter(function (x) { return x.id !== btn.getAttribute('data-item'); });
         renderTodayScreen(); scheduleSave();
 
+      } else if (action === 'cal-select') {
+        calSelected = btn.getAttribute('data-date'); renderCalendarPage();
+
+      } else if (action === 'cal-prev') {
+        calMonthOffset--; renderCalendarPage();
+
+      } else if (action === 'cal-next') {
+        calMonthOffset++; renderCalendarPage();
+
+      } else if (action === 'cal-today') {
+        calMonthOffset = 0; calSelected = todayISO(); renderCalendarPage();
+
+      } else if (action === 'cal-filter') {
+        var cfKey = btn.getAttribute('data-filter'); calFilters[cfKey] = !calFilters[cfKey];
+        try { localStorage.setItem('diaryCalFilters', JSON.stringify(calFilters)); } catch (e) {}
+        renderCalendarPage();
+
+      } else if (action === 'cal-del-event') {
+        var cdIdx = state.calendarEvents.findIndex(function (x) { return x.id === btn.getAttribute('data-id'); });
+        if (cdIdx > -1) { state.calendarEvents.splice(cdIdx, 1); renderCalendarPage(); renderTodayScreen(); scheduleSave(); }
+
       } else if (action === 'page-tab') {
         setPageTab(btn.getAttribute('data-key'), btn.getAttribute('data-ptab'));
 
@@ -14377,7 +14515,7 @@ Place this code in the empty space below. */
       } else if (action === 'go-page') {
         state.activePage = btn.getAttribute('data-page');
         renderPageNav();
-        renderProgress(); renderPRs(); renderBigChart(); renderChallenge(); renderTodayScreen(); renderTripMoney(); renderHabitsEditor(); renderTravel();
+        renderProgress(); renderPRs(); renderBigChart(); renderChallenge(); renderTodayScreen(); renderTripMoney(); renderHabitsEditor(); renderTravel(); renderCalendarPage();
         renderMeasurements();
         scheduleSave();
 
@@ -15115,6 +15253,11 @@ Place this code in the empty space below. */
         var hk = form.getAttribute('data-hub-form');
         var hEl = form.elements;
         var hTitle = hEl.title ? hEl.title.value.trim() : '';
+        if (hk === 'calevent' && hTitle) {
+          state.calendarEvents.push({ id: uid('ce'), title: hTitle, date: calSelected || todayISO(), month: null, weekdays: [], startTime: hEl.time.value || null, durationMin: 60 });
+          renderCalendarPage(); renderTodayScreen(); scheduleSave();
+          return;
+        }
         if (hk === 'food' && hTitle) {
           (state.foodLog[todayISO()] || (state.foodLog[todayISO()] = [])).push({ id: uid('f'), name: hTitle, kcal: Math.max(0, Number(hEl.kcal.value) || 0) });
           renderTodayScreen(); scheduleSave();
