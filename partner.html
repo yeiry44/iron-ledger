@@ -145,6 +145,12 @@
   .chal-count{ font-size:12px; color:var(--ink-dim); width:36px; text-align:right; }
   .trip-amt{ width:84px; font-family:var(--font-mono); font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); }
   .trip-currency{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim); }
+  [data-tab][hidden], .travel-col[hidden]{ display:none !important; }
+  .page-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .shelf-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
+  .shelf-tab{ font-family:var(--font-mono); font-size:11px; letter-spacing:.3px; background:none; border:1px solid var(--line); border-radius:999px; padding:5px 12px; color:var(--ink-dim); cursor:pointer; }
+  .shelf-tab span{ opacity:.7; margin-left:2px; }
+  .shelf-tab.is-active{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
   .progress-bar-track{ height:6px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
   .progress-bar-fill{ height:100%; background:var(--good); transition:width .25s ease; }
   .progress-caption{ font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); margin-top:5px; }
@@ -779,26 +785,27 @@
     </div>
 
     <div class="page" data-page="exercise" id="page-exercise">
-      <section class="stats-strip" id="stats-strip" aria-label="This week at a glance"></section>
+      <div class="page-tabs" data-tabbar="exercise"></div>
+      <section class="stats-strip" data-tab="today" id="stats-strip" aria-label="This week at a glance"></section>
 
-      <section class="panel partner-view-panel" aria-labelledby="partner-view-heading">
+      <section class="panel partner-view-panel" data-tab="today" aria-labelledby="partner-view-heading">
         <h2 id="partner-view-heading" style="margin-bottom:10px;">👯 Your Favorite Sister's Workout Today</h2>
         <div id="partner-view"><p class="empty-note">Connecting…</p></div>
       </section>
 
-      <section class="panel schedule-panel" aria-labelledby="schedule-heading">
+      <section class="panel schedule-panel" data-tab="plan" aria-labelledby="schedule-heading">
         <h2 id="schedule-heading" style="margin-bottom:14px;">Weekly Schedule</h2>
         <div class="schedule-scroll">
           <div class="schedule-grid" id="schedule-grid"></div>
         </div>
       </section>
 
-      <section class="panel" id="challenge-panel">
+      <section class="panel" data-tab="today" id="challenge-panel">
         <h2 style="font-size:16px;margin-bottom:8px;">🏁 Weekly Challenge with your sister</h2>
         <div id="challenge-body"></div>
       </section>
 
-      <section class="panel today-panel" aria-labelledby="today-heading">
+      <section class="panel today-panel" data-tab="today" aria-labelledby="today-heading">
         <div class="panel-head-row">
           <h2 id="today-heading">Today</h2>
           <div class="rest-setting" title="Rest timer that starts after each set">
@@ -812,7 +819,7 @@
         <div id="today-body"></div>
       </section>
 
-      <section class="panel measure-panel" aria-labelledby="measure-heading">
+      <section class="panel measure-panel" data-tab="plan" aria-labelledby="measure-heading">
         <div class="panel-head-row">
           <h2 id="measure-heading">Body Measurements</h2>
           <select class="unit-toggle" id="measure-metric-select" data-input="measure-metric" style="cursor:pointer;"></select>
@@ -831,13 +838,13 @@
         <div id="measure-list" class="measure-list"></div>
       </section>
 
-      <section class="panel">
+      <section class="panel" data-tab="progress">
         <h2 style="font-size:16px;margin-bottom:8px;">🏆 Personal Records</h2>
         <div id="pr-list"></div>
       </section>
 
       <div class="content-grid">
-        <section class="panel history-panel" aria-labelledby="history-heading">
+        <section class="panel history-panel" data-tab="ledger" aria-labelledby="history-heading">
           <div class="panel-head-row" style="margin-bottom:14px;"><h2 id="history-heading" style="margin:0;">Ledger</h2><button type="button" class="ghost-btn" data-action="clear-ledger" style="margin-left:auto;">🗑 Clear ledger</button></div>
           <form id="past-workout-form" class="past-workout-form">
             <input type="date" id="past-workout-date" aria-label="Date" required>
@@ -847,7 +854,7 @@
           <div id="history-list" class="history-list"></div>
         </section>
 
-        <aside class="panel progress-panel" aria-labelledby="progress-heading">
+        <aside class="panel progress-panel" data-tab="progress" aria-labelledby="progress-heading">
           <div class="panel-head-row">
             <h2 id="progress-heading" style="margin-bottom:14px;">Progress</h2>
             <select class="unit-toggle" id="bigchart-select" data-input="bigchart-select" style="cursor:pointer;"></select>
@@ -858,7 +865,7 @@
         </aside>
       </div>
 
-      <section class="panel routines-panel">
+      <section class="panel routines-panel" data-tab="plan">
         <details class="routines-details" id="routines-details">
           <summary>Routines &amp; exercises — edit your plan</summary>
           <div class="routines-body">
@@ -11431,6 +11438,42 @@ Place this code in the empty space below. */
     }
 
     /* ---- page nav ---- */
+    /* ---- page tabs: long pages show one section at a time. Sections carry data-tab="…" in the HTML;
+       Travel's columns are matched by their data-col instead. The chosen tab is remembered per device. ---- */
+    var PAGE_TABS = {
+      exercise: [['today', 'Today'], ['progress', 'Progress'], ['ledger', 'Ledger'], ['plan', 'Plan']],
+      habits: [['thisweek', 'This week'], ['month', 'Month'], ['edit', 'Edit']],
+      beauty: [['products', 'Products'], ['looks', 'Looks'], ['sale', 'Sale'], ['picks', 'Picks']],
+      travel: [['planned', 'Planned'], ['wishlist', 'Wishlist'], ['visited', 'Visited']]
+    };
+    var pageTabState = {};
+    try { pageTabState = JSON.parse(localStorage.getItem('diaryTabs') || '{}') || {}; } catch (e) { pageTabState = {}; }
+    function activePageTab(key) {
+      var list = PAGE_TABS[key];
+      var cur = pageTabState[key];
+      return list.some(function (t) { return t[0] === cur; }) ? cur : list[0][0];
+    }
+    function applyPageTabs() {
+      Object.keys(PAGE_TABS).forEach(function (key) {
+        var page = document.getElementById('page-' + key);
+        if (!page) return;
+        var active = activePageTab(key);
+        page.querySelectorAll('[data-tabbar="' + key + '"]').forEach(function (bar) {
+          bar.innerHTML = PAGE_TABS[key].map(function (t) {
+            return '<button type="button" class="shelf-tab' + (t[0] === active ? ' is-active' : '') + '" data-action="page-tab" data-key="' + key + '" data-ptab="' + t[0] + '">' + t[1] + '</button>';
+          }).join('');
+        });
+        page.querySelectorAll('[data-tab]').forEach(function (el) { el.hidden = el.getAttribute('data-tab') !== active; });
+        page.querySelectorAll('.travel-col[data-col]').forEach(function (el) { el.hidden = key === 'travel' && el.getAttribute('data-col') !== active; });
+      });
+    }
+    function setPageTab(key, tab) {
+      pageTabState[key] = tab;
+      try { localStorage.setItem('diaryTabs', JSON.stringify(pageTabState)); } catch (e) {}
+      applyPageTabs();
+      // charts drawn while their section was hidden have no width — redraw them now that they're visible
+      if (key === 'exercise') { renderProgress(); renderBigChart(); renderMeasurements(); }
+    }
     function renderPageNav() {
       var el = document.getElementById('page-nav');
       el.innerHTML = PAGES.map(function (p) {
@@ -13221,6 +13264,7 @@ Place this code in the empty space below. */
       renderTravelBeauty();
       renderBucketList();
       renderQuarterCalendar();
+      applyPageTabs();
       if (pendingFocus) {
         var el = document.getElementById(pendingFocus);
         if (el) { el.focus(); if (el.select) el.select(); }
@@ -13524,6 +13568,9 @@ Place this code in the empty space below. */
       } else if (action === 'travel-itinerary-day') {
         travelItineraryDay[btn.getAttribute('data-id')] = btn.getAttribute('data-date');
         renderTravel();
+
+      } else if (action === 'page-tab') {
+        setPageTab(btn.getAttribute('data-key'), btn.getAttribute('data-ptab'));
 
       } else if (action === 'delete-day' || action === 'clear-ledger') {
         e.preventDefault();
