@@ -12637,7 +12637,7 @@ Place this code in the empty space below. */
       var el = document.getElementById('travel-board');
       var groups = { wishlist: [], planned: [], visited: [] };
       state.travel.forEach(function (t) { (groups[t.status] || groups.wishlist).push(t); });
-      var cols = [{ id: 'wishlist', label: 'Wishlist' }, { id: 'planned', label: 'Planned' }, { id: 'visited', label: 'Visited' }];
+      var cols = [{ id: 'planned', label: 'Planned' }, { id: 'wishlist', label: 'Wishlist' }, { id: 'visited', label: 'Visited' }];
       el.innerHTML = cols.map(function (c) {
         var items = groups[c.id];
         var body = items.length ? items.map(function (t) { return travelCardHTML(t, c.id); }).join('') : '<p class="empty-note">Nothing here yet.</p>';
