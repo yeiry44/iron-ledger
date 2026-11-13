@@ -134,6 +134,16 @@
   .delete-session{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-family:var(--font-mono); font-size:12px; }
   .delete-session:hover{ color:var(--danger); }
 
+  .pr-row{ display:flex; align-items:baseline; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
+  .pr-name{ flex:1; min-width:120px; font-size:13px; color:var(--ink); }
+  .pr-val{ font-size:13px; color:var(--ink); }
+  .pr-date{ font-family:var(--font-mono); font-size:10.5px; color:var(--ink-dim); }
+  .chal-row{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .chal-label{ width:120px; font-size:12.5px; color:var(--ink); flex:none; }
+  .chal-track{ flex:1; }
+  .chal-count{ font-size:12px; color:var(--ink-dim); width:36px; text-align:right; }
+  .trip-amt{ width:84px; font-family:var(--font-mono); font-size:12px; background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:5px 7px; color:var(--ink); }
+  .trip-currency{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-top:8px; font-family:var(--font-mono); font-size:11px; color:var(--ink-dim); }
   .progress-bar-track{ height:6px; border-radius:999px; background:var(--surface-2); border:1px solid var(--line); overflow:hidden; }
   .progress-bar-fill{ height:100%; background:var(--good); transition:width .25s ease; }
   .progress-caption{ font-family:var(--font-mono); font-size:12px; color:var(--ink-dim); margin-top:5px; }
@@ -782,6 +792,11 @@
         </div>
       </section>
 
+      <section class="panel" id="challenge-panel">
+        <h2 style="font-size:16px;margin-bottom:8px;">🏁 Weekly Challenge with your sister</h2>
+        <div id="challenge-body"></div>
+      </section>
+
       <section class="panel today-panel" aria-labelledby="today-heading">
         <div class="panel-head-row">
           <h2 id="today-heading">Today</h2>
@@ -813,6 +828,20 @@
         </form>
         <canvas class="progress-canvas" id="measure-chart" style="height:110px;"></canvas>
         <div id="measure-list" class="measure-list"></div>
+      </section>
+
+      <section class="panel">
+        <h2 style="font-size:16px;margin-bottom:8px;">🏆 Personal Records</h2>
+        <div id="pr-list"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head-row">
+          <h2 style="font-size:16px;">📈 Progress Chart</h2>
+          <select class="unit-toggle" id="bigchart-select" data-input="bigchart-select" style="cursor:pointer;"></select>
+        </div>
+        <canvas class="progress-canvas" id="bigchart" style="height:170px;"></canvas>
+        <p class="goals-footnote" id="bigchart-note" style="margin:6px 0 0;"></p>
       </section>
 
       <div class="content-grid">
@@ -11236,6 +11265,110 @@ Place this code in the empty space below. */
       });
     }
 
+    /* ---- personal records, big progress chart, weekly challenge with your sister ---- */
+    function mySessionsList() { return Array.isArray(state.partnerSessions) ? state.partnerSessions : []; }
+    function otherSessionsList() { return Array.isArray(state.sessions) ? state.sessions : []; }
+    function computePRs(sessions) {
+      var best = {};
+      sessions.forEach(function (sess) {
+        (sess.exercises || []).forEach(function (ex) {
+          if (ex.type === 'strength') {
+            (ex.sets || []).forEach(function (s) {
+              if (!s.done) return;
+              var w = Number(s.weight), r = Number(s.reps);
+              if (!(w > 0) || !(r > 0)) return;
+              var b = best[ex.name];
+              if (!b || w > b.weight || (w === b.weight && r > b.reps)) best[ex.name] = { name: ex.name, kind: 'strength', weight: w, reps: r, date: sess.date };
+            });
+          } else if (ex.type === 'cardio' && ex.done) {
+            var dist = Number(ex.distance) || 0;
+            if (!(dist > 0)) return;
+            var cb = best[ex.name];
+            if (!cb || dist > cb.distance) best[ex.name] = { name: ex.name, kind: 'cardio', distance: dist, date: sess.date };
+          }
+        });
+      });
+      return Object.keys(best).map(function (k) { return best[k]; }).sort(function (a, b) { return a.date < b.date ? 1 : -1; });
+    }
+    function renderPRs() {
+      var el = document.getElementById('pr-list');
+      if (!el) return;
+      var prs = computePRs(mySessionsList());
+      if (!prs.length) { el.innerHTML = '<p class="empty-note">Log a set with weight and reps (and check it off) to start collecting records.</p>'; return; }
+      var distUnit = state.unit === 'kg' ? 'km' : 'mi';
+      el.innerHTML = prs.map(function (p) {
+        var isNew = daysBetween(p.date, todayISO()) <= 7;
+        return '<div class="pr-row"><span class="pr-name">' + escapeHtml(p.name) + (isNew ? ' <span class="pr-badge">NEW</span>' : '') + '</span>' +
+          '<span class="num pr-val">' + (p.kind === 'cardio' ? fmtNum(p.distance) + ' ' + distUnit : fmtNum(p.weight) + ' ' + state.unit + ' × ' + p.reps) + '</span>' +
+          '<span class="pr-date">' + escapeHtml(formatHeading(p.date)) + '</span></div>';
+      }).join('');
+    }
+    var bigChartName = null; // ephemeral UI state — which exercise the big chart shows
+    function seriesOfSessions(sessions, name) {
+      var byDate = {};
+      sessions.forEach(function (sess) {
+        var ex = (sess.exercises || []).find(function (e) { return e.name === name && e.type === 'strength'; });
+        if (!ex) return;
+        var b = bestSetOf(ex);
+        if (b && (!byDate[sess.date] || b.est > byDate[sess.date].est)) byDate[sess.date] = b;
+      });
+      return Object.keys(byDate).sort().map(function (d) { return { date: d, weight: byDate[d].weight, reps: byDate[d].reps, est: byDate[d].est }; });
+    }
+    function renderBigChart() {
+      var sel = document.getElementById('bigchart-select');
+      var canvas = document.getElementById('bigchart');
+      var note = document.getElementById('bigchart-note');
+      if (!sel || !canvas) return;
+      var sessions = mySessionsList(), names = {};
+      sessions.forEach(function (sess) { (sess.exercises || []).forEach(function (ex) { if (ex.type === 'strength' && bestSetOf(ex)) names[ex.name] = 1; }); });
+      var list = Object.keys(names).sort();
+      if (!list.length) { sel.innerHTML = ''; note.textContent = 'Check off a set with weight and reps to see a chart here.'; canvas.style.display = 'none'; return; }
+      canvas.style.display = '';
+      if (!bigChartName || list.indexOf(bigChartName) === -1) bigChartName = list[0];
+      sel.innerHTML = list.map(function (n) { return '<option value="' + attr(n) + '"' + (n === bigChartName ? ' selected' : '') + '>' + escapeHtml(n) + '</option>'; }).join('');
+      var series = seriesOfSessions(sessions, bigChartName);
+      drawSparkline(canvas, series);
+      if (series.length < 2) { note.textContent = 'Log this exercise on one more day to see a trend.'; return; }
+      var f = series[0], l = series[series.length - 1], diff = l.est - f.est;
+      note.innerHTML = 'Estimated 1-rep max: <strong>' + fmtNum(Math.round(f.est)) + '</strong> (' + escapeHtml(formatHeading(f.date)) + ') → <strong>' + fmtNum(Math.round(l.est)) + ' ' + state.unit + '</strong> (' + escapeHtml(formatHeading(l.date)) + ') · ' + (diff >= 0 ? '+' : '') + fmtNum(Math.round(diff)) + ' ' + state.unit;
+    }
+    function challengeWeekCount(sessions, weekStartISO) {
+      var start = parseLocalISO(weekStartISO), dates = {};
+      var days = {};
+      for (var i = 0; i < 7; i++) { var d = new Date(start); d.setDate(d.getDate() + i); days[isoFromDate(d)] = 1; }
+      sessions.forEach(function (s) {
+        if (days[s.date] && (s.manualEntry || (s.exercises || []).some(hasAnyProgress))) dates[s.date] = 1;
+      });
+      return Object.keys(dates).length;
+    }
+    function challengeStreak(sessions, goal) {
+      if (!(goal > 0)) return 0;
+      var cur = parseLocalISO(currentWeekStart()), cnt = 0, n = 0;
+      function ws(k) { var d = new Date(cur); d.setDate(d.getDate() - 7 * k); return isoFromDate(d); }
+      if (challengeWeekCount(sessions, ws(0)) < goal) n = 1;
+      while (n < 104 && challengeWeekCount(sessions, ws(n)) >= goal) { cnt++; n++; }
+      return cnt;
+    }
+    function renderChallenge() {
+      var el = document.getElementById('challenge-body');
+      if (!el) return;
+      var goal = Math.max(1, Number(state.challenge && state.challenge.goal) || 3);
+      var ws = currentWeekStart();
+      var me = challengeWeekCount(mySessionsList(), ws), them = challengeWeekCount(otherSessionsList(), ws);
+      function bar(label, n) {
+        var pct = Math.min(100, Math.round(n / goal * 100));
+        return '<div class="chal-row"><span class="chal-label">' + escapeHtml(label) + '</span><div class="progress-bar-track chal-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div><span class="num chal-count">' + n + '/' + goal + '</span></div>';
+      }
+      var msg = me === them ? (me ? 'Neck and neck this week 🤝' : 'Fresh week — first one to log a workout takes the lead!') : (me > them ? 'You\'re ahead by ' + (me - them) + ' 💪' : PARTNER_VIEW_LABEL + ' is ahead by ' + (them - me) + ' — time to catch up! 🏃‍♀️');
+      var s1 = challengeStreak(mySessionsList(), goal), s2 = challengeStreak(otherSessionsList(), goal);
+      el.innerHTML = bar('You', me) + bar(PARTNER_VIEW_LABEL, them) +
+        '<p class="goals-footnote" style="margin:8px 0 4px;">' + msg + '</p>' +
+        '<p class="goals-footnote" style="margin:0 0 8px;">🔥 Streak of weeks hitting the goal — you: <strong>' + s1 + '</strong> · ' + escapeHtml(PARTNER_VIEW_LABEL) + ': <strong>' + s2 + '</strong></p>' +
+        CHALLENGE_GOAL_EDITOR(goal);
+    }
+    function CHALLENGE_GOAL_EDITOR(goal) {
+      return '<div class="trip-currency" style="margin-top:0;"><span>Weekly goal</span><input type="number" min="1" max="7" class="trip-amt" data-input="challenge-goal" value="' + goal + '"><span>workouts each (Mon–Sun)</span></div>';
+    }
     function exerciseOptionsHTML() {
       var names = new Set();
       state.partnerRoutines.forEach(function (r) { r.exercises.forEach(function (ex) { if (ex.name) names.add(ex.name); }); });
@@ -13061,6 +13194,9 @@ Place this code in the empty space below. */
       renderRoutines();
       renderHistory();
       renderProgress();
+      renderPRs();
+      renderBigChart();
+      renderChallenge();
       renderNutrition();
       renderFinance();
       renderTravelBeauty();
@@ -13385,7 +13521,7 @@ Place this code in the empty space below. */
       } else if (action === 'go-page') {
         state.activePage = btn.getAttribute('data-page');
         renderPageNav();
-        renderProgress();
+        renderProgress(); renderPRs(); renderBigChart(); renderChallenge();
         renderMeasurements();
         scheduleSave();
 
@@ -13831,7 +13967,12 @@ Place this code in the empty space below. */
     /* ---- change delegation (exercise type select — structural, re-render immediately) ---- */
     document.body.addEventListener('change', function (e) {
       var t = e.target;
-      if (t.getAttribute('data-input') === 'exercise-type') {
+      if (t.getAttribute('data-input') === 'bigchart-select') {
+        bigChartName = t.value; renderBigChart();
+      } else if (t.getAttribute('data-input') === 'challenge-goal') {
+        state.challenge = { goal: Math.min(7, Math.max(1, Number(t.value) || 3)) };
+        renderChallenge(); scheduleSave();
+      } else if (t.getAttribute('data-input') === 'exercise-type') {
         var routine = getRoutine(t.getAttribute('data-routine'));
         var rex = routine && findRoutineExercise(routine, t.getAttribute('data-exercise'));
         if (rex) {

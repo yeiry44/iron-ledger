@@ -11572,11 +11572,11 @@ Place this code in the empty space below. */
         var pct = Math.min(100, Math.round(n / goal * 100));
         return '<div class="chal-row"><span class="chal-label">' + escapeHtml(label) + '</span><div class="progress-bar-track chal-track"><div class="progress-bar-fill" style="width:' + pct + '%"></div></div><span class="num chal-count">' + n + '/' + goal + '</span></div>';
       }
-      var msg = me === them ? (me ? 'Neck and neck this week 🤝' : 'Fresh week — first one to log a workout takes the lead!') : (me > them ? 'You\'re ahead by ' + (me - them) + ' 💪' : PARTNER_VIEW_LABEL + ' is ahead by ' + (them - me) + ' — time to catch up! 🏃‍♀️');
+      var msg = me === them ? (me ? 'Neck and neck this week 🤝' : 'Fresh week — first one to log a workout takes the lead!') : (me > them ? 'You\'re ahead by ' + (me - them) + ' 💪' : 'Your sister is ahead by ' + (them - me) + ' — time to catch up! 🏃‍♀️');
       var s1 = challengeStreak(mySessionsList(), goal), s2 = challengeStreak(otherSessionsList(), goal);
-      el.innerHTML = bar('You', me) + bar(PARTNER_VIEW_LABEL, them) +
+      el.innerHTML = bar('You', me) + bar('Your sister', them) +
         '<p class="goals-footnote" style="margin:8px 0 4px;">' + msg + '</p>' +
-        '<p class="goals-footnote" style="margin:0 0 8px;">🔥 Streak of weeks hitting the goal — you: <strong>' + s1 + '</strong> · ' + escapeHtml(PARTNER_VIEW_LABEL) + ': <strong>' + s2 + '</strong></p>' +
+        '<p class="goals-footnote" style="margin:0 0 8px;">🔥 Streak of weeks hitting the goal — you: <strong>' + s1 + '</strong> · ' + 'Your sister: <strong>' + s2 + '</strong></p>' +
         CHALLENGE_GOAL_EDITOR(goal);
     }
     function CHALLENGE_GOAL_EDITOR(goal) {
