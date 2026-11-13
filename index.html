@@ -11029,6 +11029,13 @@ Place this code in the empty space below. */
         var btn = '<button type="button" class="' + checkClass + '" data-action="toggle-goal" data-goal="' + g.id + '" data-day="' + i + '" aria-label="' + attr(g.label) + ' — ' + GOAL_DAY_LABELS[i] + '" aria-pressed="' + done + '">' + checkInner + '</button>';
         if (g.hasNote) {
           var noteVal = (noteArr && noteArr[i]) || '';
+          if (g.id === 'bible' && done && i === mondayIndex(new Date())) {
+            // today's reading is crossed off — show the next reading she's due, not the one she just finished
+            var curWk = getGoalWeek(currentWeekStart());
+            if (curWk && curWk.notes && curWk.notes.bible === noteArr) {
+              noteVal = state.biblePointer < BIBLE_CURRICULUM.length ? 'Next: ' + BIBLE_CURRICULUM[state.biblePointer] : 'Reading plan complete 🎉';
+            }
+          }
           var noteEl = g.noteReadOnly
             ? '<span class="goal-note-readonly">' + (noteVal ? escapeHtml(noteVal) : '—') + '</span>'
             : '<input type="text" class="goal-note-input goal-note-input-sm" data-input="goal-note" data-goal="' + g.id + '" data-day="' + i + '" value="' + attr(noteVal) + '" placeholder="' + attr(g.notePlaceholder || '—') + '">';
@@ -12020,10 +12027,10 @@ Place this code in the empty space below. */
     var travelEditIds = {}; // ephemeral UI state — which cards are in edit mode; not persisted
     var travelItineraryDay = {}; // ephemeral UI state — selected day (per trip id) for the hour-by-hour itinerary; not persisted
     function tripDayList(t) {
-      if (!t.startDate || !t.endDate) return [];
+      if (!t.startDate && !t.endDate) return [];
       var days = [];
-      var cur = parseLocalISO(t.startDate);
-      var end = parseLocalISO(t.endDate);
+      var cur = parseLocalISO(t.startDate || t.endDate);
+      var end = parseLocalISO(t.endDate || t.startDate);
       var guard = 0;
       while (cur <= end && guard < 60) {
         days.push(cur.getFullYear() + '-' + pad(cur.getMonth() + 1) + '-' + pad(cur.getDate()));
@@ -12043,7 +12050,7 @@ Place this code in the empty space below. */
     function travelItineraryHTML(t) {
       var days = tripDayList(t);
       if (!days.length) {
-        return '<p class="goals-footnote" style="margin-top:8px;">Add a start and end date above (✎ Edit details) to build a day-by-day, hour-by-hour itinerary here.</p>';
+        return '<p class="goals-footnote" style="margin-top:8px;">Add a trip start date above (✎ Edit details) to build a day-by-day, hour-by-hour itinerary here.</p>';
       }
       var selDay = (travelItineraryDay[t.id] && days.indexOf(travelItineraryDay[t.id]) > -1) ? travelItineraryDay[t.id] : days[0];
       var dayTabs = days.map(function (d, i) {
