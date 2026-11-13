@@ -3,6 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#7a2333">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Diary">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>Diary</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,500;0,600;1,500;1,600&amp;family=Quicksand:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;display=swap">
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -525,6 +532,23 @@
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
   .travel-card details input, .travel-card details textarea, .travel-card details select,
   .hub-sec input, .hub-sec textarea, .hub-sec select{ background:transparent !important; }
+  .today-hero h2{ font-family:var(--font-display, serif); font-style:italic; font-size:26px; margin:0; color:var(--ink); }
+  .today-hero p{ margin:2px 0 14px; color:var(--ink-dim); font-size:13px; }
+  .today-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:12px; }
+  .today-card{ border:1px solid var(--line); border-radius:16px; padding:14px; background:var(--surface); }
+  .today-card-head{ display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .today-card-head h3{ margin:0; font-size:14px; font-weight:600; color:var(--ink); }
+  .today-big{ margin:0 0 6px; font-size:16px; color:var(--ink); }
+  .today-habits{ display:flex; flex-direction:column; gap:6px; }
+  .today-habit{ display:flex; align-items:center; gap:10px; text-align:left; background:transparent; border:1px solid var(--line); border-radius:12px; padding:8px 10px; cursor:pointer; color:var(--ink); }
+  .today-habit.is-done{ background:var(--surface-2); }
+  .today-habit.is-done .today-habit-label{ color:var(--ink-dim); text-decoration:line-through; }
+  .today-check{ flex:none; width:22px; height:22px; border-radius:50%; border:1.5px solid var(--accent); display:flex; align-items:center; justify-content:center; color:var(--accent-ink); font-size:13px; }
+  .today-habit.is-done .today-check{ background:var(--accent); }
+  .today-habit-label{ display:flex; flex-direction:column; font-size:13px; }
+  .today-habit-note{ font-size:11px; color:var(--ink-dim); }
+  .today-rem{ font-size:13px; padding:4px 0; color:var(--ink); }
+  .today-rem.is-due{ color:var(--accent); }
   .shelf-goal{ display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; }
   [data-tab][hidden], .travel-col[hidden]{ display:none !important; }
   .page-tabs{ display:flex; gap:6px; flex-wrap:wrap; margin-bottom:12px; }
@@ -798,6 +822,8 @@
 
     <nav class="page-nav" id="page-nav" aria-label="Dashboard sections"></nav>
 
+    <div class="page" data-page="today" id="page-today"><div id="today-screen"></div></div>
+
     <div class="page" data-page="habits" id="page-habits">
       <div class="page-tabs" data-tabbar="habits"></div>
       <section class="panel" data-tab="thisweek">
@@ -1041,6 +1067,11 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
         <h2 style="margin-bottom:14px;">Monthly Expenses</h2>
         <div id="fin-expenses-list"></div>
         <button type="button" class="ghost-btn" data-action="fin-add-expense">+ Add expense</button>
+      </section>
+
+      <section class="panel">
+        <h2 style="margin-bottom:10px;">✈️ Trip money</h2>
+        <div id="fin-trip-money"></div>
       </section>
 
       <section class="panel">
@@ -10317,9 +10348,11 @@ Place this code in the empty space below. */
     });
     }
     normalizeState();
+    state.activePage = 'today'; // always open on the Today screen
 
     var USER_PROFILE ={ heightIn: 63, age: 25, sex: 'female', startWeight: 195, weeklyLossLowLb: 1, weeklyLossHighLb: 2 };
     var PAGES = [
+      { id: 'today', label: '🏠 Today' },
       { id: 'habits', label: '🌸 Habit Tracker' },
       { id: 'exercise', label: '🏋️ Exercise' },
       { id: 'nutrition', label: '🥗 Nutrition' },
@@ -10605,9 +10638,11 @@ Place this code in the empty space below. */
       if (sanitizedLastModified(remote.lastModified) <= sanitizedLastModified(state.lastModified)) return;
       if (isTypingNow()) { setTimeout(function () { applyRemoteState(remote); }, 1000); return; }
       fbApplyingRemote = true;
+      var keepPage = state.activePage; // which page you are on is per-device, not synced
       state = remote;
       state.lastModified = sanitizedLastModified(remote.lastModified) || Date.now();
       normalizeState();
+      if (keepPage) state.activePage = keepPage;
       saveLocalStorage(state);
       renderAll();
       fbApplyingRemote = false;
@@ -11742,6 +11777,103 @@ Place this code in the empty space below. */
       // charts drawn while their section was hidden have no width — redraw them now that they're visible
       if (key === 'exercise') { renderProgress(); renderBigChart(); renderMeasurements(); }
     }
+    /* ---- Today screen: one landing page with what matters right now ---- */
+    function todayCardHTML(title, icon, body, goTo) {
+      return '<section class="today-card"><div class="today-card-head"><h3>' + icon + ' ' + title + '</h3>' +
+        (goTo ? '<button type="button" class="hub-btn" data-action="today-go" data-page="' + goTo[0] + '"' + (goTo[1] ? ' data-key="' + goTo[1] + '" data-ptab="' + goTo[2] + '"' : '') + '>Open</button>' : '') +
+        '</div>' + body + '</section>';
+    }
+    function nextTripInfo() {
+      var today = todayISO(), best = null;
+      state.travel.forEach(function (t) {
+        if (t.status !== 'planned' || !t.startDate) return;
+        var end = t.endDate || t.startDate;
+        if (end < today) return;
+        if (!best || t.startDate < best.startDate) best = t;
+      });
+      return best;
+    }
+    function renderTodayScreen() {
+      var el = document.getElementById('today-screen');
+      if (!el) return;
+      var now = new Date();
+      var hour = now.getHours();
+      var greet = hour < 12 ? 'Good morning' : (hour < 18 ? 'Good afternoon' : 'Good evening');
+      var idx = mondayIndex(now), weekday = now.getDay();
+      var wk = ensureCurrentGoalWeek();
+      var cards = [];
+
+      // workout
+      var routine = getRoutine(state.schedule[weekday]);
+      var todays = state.sessions.filter(function (s) { return s.date === todayISO(); });
+      var active = todays.filter(function (s) { return s.exercises.some(hasAnyProgress); })[0] || todays.filter(function (s) { return routine && s.routineId === routine.id; })[0];
+      var wBody;
+      if (active) {
+        var pr = sessionProgress(active), anyDone = active.exercises.filter(hasAnyProgress).length;
+        wBody = '<p class="today-big">' + escapeHtml(active.routineName) + '</p><div class="progress-bar-track"><div class="progress-bar-fill" style="width:' + (pr.total ? Math.round(anyDone / pr.total * 100) : 0) + '%"></div></div><p class="goals-footnote">' + anyDone + ' of ' + pr.total + ' exercises started' + (active.finished ? ' · finished' : '') + '</p>';
+      } else if (routine) {
+        wBody = '<p class="today-big">' + escapeHtml(routine.name) + '</p><p class="goals-footnote">Scheduled for today · ' + routine.exercises.length + ' exercises · not started yet</p>';
+      } else {
+        wBody = '<p class="today-big">Rest day</p><p class="goals-footnote">Nothing scheduled — enjoy it.</p>';
+      }
+      var me = challengeWeekCount(mySessionsList(), currentWeekStart()), them = challengeWeekCount(otherSessionsList(), currentWeekStart());
+      var goal = Math.max(1, Number(state.challenge && state.challenge.goal) || 3);
+      wBody += '<p class="goals-footnote" style="margin-top:6px;">Challenge this week: you ' + me + '/' + goal + ' · your sister ' + them + '/' + goal + '</p>';
+      cards.push(todayCardHTML('Workout', '🏋️', wBody, ['exercise', 'exercise', 'today']));
+
+      // habits
+      var rows = '', total = 0, doneN = 0;
+      GOAL_DEFS.forEach(function (g) {
+        if (g.excludeDays && g.excludeDays.indexOf(idx) > -1) return;
+        var arr = wk.days[g.id] || blankGoalDayArray(g);
+        var v = arr[idx];
+        if (g.type === 'numeric') return;
+        total++;
+        var done = goalValueDone(g, v);
+        if (done) doneN++;
+        var label = escapeHtml(g.label);
+        var extra = '';
+        if (g.hasNote && wk.notes && wk.notes[g.id] && wk.notes[g.id][idx]) extra = '<span class="today-habit-note">' + escapeHtml(wk.notes[g.id][idx]) + '</span>';
+        if (g.bottles) extra = '<span class="today-habit-note">' + (Number(v) || 0) + ' of ' + g.bottles + '</span>';
+        rows += '<button type="button" class="today-habit' + (done ? ' is-done' : '') + '" data-action="today-habit" data-goal="' + g.id + '"><span class="today-check">' + (done ? '✓' : '') + '</span><span class="today-habit-label">' + label + extra + '</span></button>';
+      });
+      cards.push(todayCardHTML('Habits today', '🌸', '<p class="goals-footnote" style="margin:0 0 8px;"><strong>' + doneN + '</strong> of ' + total + ' done · weekly score ' + (function () { var s = computeGoalsScore(wk); return s.applicable ? Math.round(s.done / s.applicable * 100) : 0; })() + '%</p><div class="today-habits">' + (rows || '<p class="goals-footnote">No habits scheduled today.</p>') + '</div>', ['habits', 'habits', 'thisweek']));
+
+      // reminders still to go
+      var hhmm = pad(now.getHours()) + ':' + pad(now.getMinutes());
+      var rem = GOAL_DEFS.filter(function (g) {
+        if (!g.remind || (g.excludeDays && g.excludeDays.indexOf(idx) > -1)) return false;
+        var arr = wk.days[g.id]; return !(arr && goalValueDone(g, arr[idx]));
+      }).sort(function (a, b) { return a.remind < b.remind ? -1 : 1; });
+      if (rem.length) {
+        cards.push(todayCardHTML('Reminders', '⏰', rem.map(function (g) {
+          var hm = g.remind.split(':'), h12 = (Number(hm[0]) % 12) || 12;
+          return '<div class="today-rem' + (g.remind <= hhmm ? ' is-due' : '') + '"><span class="num">' + h12 + ':' + hm[1] + ' ' + (Number(hm[0]) < 12 ? 'AM' : 'PM') + '</span> ' + escapeHtml(g.label) + '</div>';
+        }).join(''), ['habits', 'habits', 'edit']));
+      }
+
+      // next trip
+      var trip = nextTripInfo();
+      if (trip) {
+        var pill = tripCountdownPill(trip).replace(/<[^>]+>/g, '').replace('⏳ ', '');
+        var goalObj = trip.savingsGoalId ? state.finance.savingsGoals.find(function (g) { return g.id === trip.savingsGoalId; }) : null;
+        var tBody = '<p class="today-big">' + escapeHtml(trip.place) + '</p><p class="goals-footnote">' + escapeHtml(pill) + ' · ' + escapeHtml(formatHeading(trip.startDate)) + '</p>' +
+          '<p class="goals-footnote">' + tripBudgetSummaryHTML(trip) + '</p>';
+        if (goalObj && goalObj.target) tBody += '<div class="travel-savings-track"><div class="travel-savings-fill" style="width:' + Math.max(0, Math.min(100, Math.round((goalObj.saved || 0) / goalObj.target * 100))) + '%;"></div></div><p class="goals-footnote">Saved $' + fmtNum(goalObj.saved || 0) + ' of $' + fmtNum(goalObj.target) + '</p>';
+        var tpl = trip.packingList.length ? '<p class="goals-footnote">Packed ' + trip.packingList.filter(function (x) { return x.done; }).length + '/' + trip.packingList.length + (trip.bookingItems.length ? ' · booked ' + trip.bookingItems.filter(function (x) { return x.done; }).length + '/' + trip.bookingItems.length : '') + '</p>' : '';
+        cards.push(todayCardHTML('Next trip', '✈️', tBody + tpl, ['travel', 'travel', 'planned']));
+      }
+
+      // reading
+      var cur = state.currentlyReading[0];
+      var rBody = cur
+        ? '<p class="today-big">' + escapeHtml(cur.title) + '</p><div class="progress-bar-track"><div class="progress-bar-fill" style="width:' + readingPct(cur) + '%"></div></div><p class="goals-footnote">' + readingPct(cur) + '% read</p>'
+        : '<p class="goals-footnote">Nothing in progress right now.</p>';
+      rBody += '<p class="goals-footnote">' + readingGoalText(readingGoalDone(), Number(state.readingGoal.target) || 0) + ' this year</p>';
+      cards.push(todayCardHTML('Reading', '📚', rBody, ['books']));
+
+      el.innerHTML = '<div class="today-hero"><h2>' + greet + '</h2><p>' + now.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }) + '</p></div><div class="today-grid">' + cards.join('') + '</div>';
+    }
     function renderPageNav() {
       var el = document.getElementById('page-nav');
       el.innerHTML = PAGES.map(function (p) {
@@ -12139,8 +12271,46 @@ Place this code in the empty space below. */
       }).join('') : '<p class="empty-note">Add upcoming trips to plan around them.</p>';
 
       renderSavingsGoals();
+      renderTripMoney();
       renderFinanceSummary();
       renderBudgetCheck();
+    }
+    /* ---- Trip money: each upcoming trip's budget, what's been spent, and how its linked savings goal is doing ---- */
+    function monthsUntil(iso) {
+      var d = daysBetween(todayISO(), iso);
+      return d === null ? null : Math.max(1, Math.ceil(d / 30.4));
+    }
+    function renderTripMoney() {
+      var el = document.getElementById('fin-trip-money');
+      if (!el) return;
+      var trips = state.travel.filter(function (t) { return t.status === 'planned'; }).sort(function (a, b) { return (a.startDate || '9999') < (b.startDate || '9999') ? -1 : 1; });
+      if (!trips.length) { el.innerHTML = '<p class="empty-note">Mark a trip as planned on the Travel page and its budget shows up here.</p>'; return; }
+      var totalBudget = 0, totalSpent = 0, totalMonthly = 0;
+      var rows = trips.map(function (t) {
+        var est = parseMoney(t.budget);
+        var spent = (t.spending || []).reduce(function (s, x) { return s + (Number(x.amount) || 0); }, 0);
+        var goal = t.savingsGoalId ? state.finance.savingsGoals.find(function (g) { return g.id === t.savingsGoalId; }) : null;
+        if (est !== null) totalBudget += est;
+        totalSpent += spent;
+        var lines = [];
+        lines.push('Budget ' + (est !== null ? '<strong>$' + fmtNum(est) + '</strong>' : '— (add one in Details)') + ' · spent <strong>$' + fmtNum(spent) + '</strong>' + (est !== null ? (est - spent >= 0 ? ' · $' + fmtNum(est - spent) + ' left' : ' · <span class="trip-over">$' + fmtNum(spent - est) + ' over</span>') : ''));
+        var bar = '';
+        if (goal && goal.target) {
+          var saved = goal.saved || 0;
+          var gp = Math.max(0, Math.min(100, Math.round(saved / goal.target * 100)));
+          bar = '<div class="travel-savings-track"><div class="travel-savings-fill" style="width:' + gp + '%;"></div></div>';
+          lines.push('🐷 ' + escapeHtml(goal.name || 'Savings goal') + ': $' + fmtNum(saved) + ' of $' + fmtNum(goal.target) + ' (' + gp + '%)');
+          var due = goal.deadline || t.startDate;
+          var m = due ? monthsUntil(due) : null;
+          if (m !== null && goal.target > saved) { var per = Math.ceil((goal.target - saved) / m); totalMonthly += per; lines.push('Save about <strong>$' + fmtNum(per) + '/month</strong> for ' + m + ' month' + (m === 1 ? '' : 's') + ' to be ready.'); }
+          else if (goal.target <= saved) lines.push('Fully funded ✓');
+        } else {
+          lines.push('<span class="goals-footnote">No savings goal linked — pick one in the trip\'s Details.</span>');
+        }
+        return '<div class="fin-goal-card"><div class="hub-row-head"><span class="beauty-product-name">' + escapeHtml(t.place) + '</span><span class="num shelf-pct">' + (t.startDate ? escapeHtml(formatHeading(t.startDate)) : 'no date') + '</span></div>' + bar +
+          lines.map(function (l) { return '<div class="fin-goal-caption">' + l + '</div>'; }).join('') + '</div>';
+      }).join('');
+      el.innerHTML = '<p class="goals-footnote" style="margin:0 0 10px;">All planned trips: <strong>$' + fmtNum(totalBudget) + '</strong> budgeted · <strong>$' + fmtNum(totalSpent) + '</strong> spent' + (totalMonthly ? ' · about <strong>$' + fmtNum(totalMonthly) + '/month</strong> to save across your goals' : '') + '.</p>' + rows;
     }
     function tripsLinkedToGoal(goalId) {
       return state.travel.filter(function (trv) { return trv.savingsGoalId === goalId; });
@@ -13776,6 +13946,7 @@ Place this code in the empty space below. */
       renderSchedule();
       renderGoals();
       renderHabitsEditor();
+      renderTodayScreen();
       renderDailySchedule();
       renderRoutineChips();
       renderToday();
@@ -14096,6 +14267,23 @@ Place this code in the empty space below. */
         travelItineraryDay[btn.getAttribute('data-id')] = btn.getAttribute('data-date');
         renderTravel();
 
+      } else if (action === 'today-go') {
+        state.activePage = btn.getAttribute('data-page');
+        if (btn.getAttribute('data-key')) setPageTab(btn.getAttribute('data-key'), btn.getAttribute('data-ptab'));
+        renderPageNav(); renderProgress(); renderPRs(); renderBigChart(); renderMeasurements();
+        window.scrollTo(0, 0);
+
+      } else if (action === 'today-habit') {
+        var thWk = ensureCurrentGoalWeek();
+        var thG = GOAL_DEFS.find(function (g) { return g.id === btn.getAttribute('data-goal'); });
+        var thI = mondayIndex(new Date());
+        if (thG && thWk.days[thG.id]) {
+          var thV = thWk.days[thG.id][thI];
+          if (thG.bottles) thWk.days[thG.id][thI] = (Number(thV) || 0) >= thG.bottles ? 0 : (Number(thV) || 0) + 1;
+          else thWk.days[thG.id][thI] = !thV;
+          renderGoals(); renderTodayScreen(); scheduleSave();
+        }
+
       } else if (action === 'page-tab') {
         setPageTab(btn.getAttribute('data-key'), btn.getAttribute('data-ptab'));
 
@@ -14127,7 +14315,7 @@ Place this code in the empty space below. */
       } else if (action === 'go-page') {
         state.activePage = btn.getAttribute('data-page');
         renderPageNav();
-        renderProgress(); renderPRs(); renderBigChart(); renderChallenge();
+        renderProgress(); renderPRs(); renderBigChart(); renderChallenge(); renderTodayScreen(); renderTripMoney(); renderHabitsEditor();
         renderMeasurements();
         scheduleSave();
 
@@ -15226,6 +15414,7 @@ Place this code in the empty space below. */
     /* ---- init ---- */
     renderAll();
     checkHabitReminders();
+    if ('serviceWorker' in navigator && location.protocol === 'https:') { navigator.serviceWorker.register('sw.js').catch(function () {}); }
     initCollapsiblePanels();
     initScheduleDrag();
   })();
