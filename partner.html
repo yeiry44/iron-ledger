@@ -133,6 +133,7 @@
   .status-badge.progress{ background:var(--warn-soft); color:var(--warn); }
   .delete-session{ background:none; border:none; color:var(--ink-dim); cursor:pointer; font-family:var(--font-mono); font-size:12px; }
   .delete-session:hover{ color:var(--danger); }
+  .day-delete{ margin-left:8px; font-size:14px; }
 
   .pr-row{ display:flex; align-items:baseline; gap:10px; padding:6px 0; border-bottom:1px dashed var(--line); flex-wrap:wrap; }
   .pr-name{ flex:1; min-width:120px; font-size:13px; color:var(--ink); }
@@ -837,7 +838,7 @@
 
       <div class="content-grid">
         <section class="panel history-panel" aria-labelledby="history-heading">
-          <h2 id="history-heading" style="margin-bottom:14px;">Ledger</h2>
+          <div class="panel-head-row" style="margin-bottom:14px;"><h2 id="history-heading" style="margin:0;">Ledger</h2><button type="button" class="ghost-btn" data-action="clear-ledger" style="margin-left:auto;">🗑 Clear ledger</button></div>
           <form id="past-workout-form" class="past-workout-form">
             <input type="date" id="past-workout-date" aria-label="Date" required>
             <select id="past-workout-routine" aria-label="Routine" required></select>
@@ -10957,7 +10958,7 @@ Place this code in the empty space below. */
           '<span class="session-routine-name">' + escapeHtml(session.routineName) + '</span>' +
           '<input type="date" class="session-date-edit" data-input="session-date" data-session="' + session.id + '" value="' + attr(session.date) + '" aria-label="Change the date this workout is filed under">' +
           '<span class="status-badge ' + (session.finished ? 'finished' : 'progress') + '">' + (session.finished ? 'finished' : 'in progress') + '</span>' +
-          '</div><button type="button" class="delete-session" data-action="delete-session" data-session="' + session.id + '">remove</button></div>';
+          '</div><button type="button" class="delete-session" data-action="delete-session" data-session="' + session.id + '">🗑 remove</button></div>';
       }
       var exList = session.exercises.length
         ? '<div class="ex-list">' + session.exercises.map(function (ex) { return exerciseRowHTML(session, ex); }).join('') + '</div>'
@@ -11206,7 +11207,7 @@ Place this code in the empty space below. */
         var exCount = sessions.reduce(function (n, s) { return n + s.exercises.filter(hasAnyProgress).length; }, 0);
         return '<details class="day-group"' + (idx === 0 ? ' open' : '') + '>' +
           '<summary><span class="day-heading"><span class="chev">▸</span>' + formatHeading(date) + '</span>' +
-          '<span class="day-summary num">' + sessions.length + (sessions.length === 1 ? ' workout' : ' workouts') + ' · ' + exCount + ' exercises</span></summary>' +
+          '<span class="day-summary num">' + sessions.length + (sessions.length === 1 ? ' workout' : ' workouts') + ' · ' + exCount + ' exercises</span><button type="button" class="delete-session day-delete" data-action="delete-day" data-date="' + date + '" aria-label="Delete this day">🗑</button></summary>' +
           '<div class="day-sessions">' + sessions.map(function (s) { return sessionBlockHTML(s, 'history'); }).join('') + '</div>' +
           '</details>';
       }).join('');
@@ -13523,6 +13524,19 @@ Place this code in the empty space below. */
       } else if (action === 'travel-itinerary-day') {
         travelItineraryDay[btn.getAttribute('data-id')] = btn.getAttribute('data-date');
         renderTravel();
+
+      } else if (action === 'delete-day' || action === 'clear-ledger') {
+        e.preventDefault();
+        var delDate = btn.getAttribute('data-date');
+        var gone = state.partnerSessions.filter(function (s) { return (action === 'clear-ledger' || s.date === delDate) && (s.manualEntry || s.exercises.some(hasAnyProgress)); });
+        if (!gone.length) return;
+        if (action === 'clear-ledger' && !window.confirm('Delete all ' + gone.length + ' workouts in your ledger? You can undo right after.')) return;
+        state.partnerSessions = state.partnerSessions.filter(function (s) { return gone.indexOf(s) === -1; });
+        renderAll(); scheduleSave();
+        showUndoToast('Removed ' + gone.length + (gone.length === 1 ? ' workout' : ' workouts') + '.', function () {
+          gone.forEach(function (s) { state.partnerSessions.push(s); });
+          renderAll(); scheduleSave();
+        });
 
       } else if (action === 'delete-session') {
         var sid = btn.getAttribute('data-session');
