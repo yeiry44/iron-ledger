@@ -522,6 +522,12 @@
   .travel-itinerary-hours{ max-height:340px; overflow-y:auto; padding-right:2px; }
   .travel-email-item{ margin:0; padding:3px 0; font-size:12px; color:var(--ink); line-height:1.5; }
   .travel-email-item + .travel-email-item{ border-top:1px solid var(--line); }
+  .hub-row{ margin-bottom:12px; padding-bottom:10px; border-bottom:1px dashed var(--line); }
+  .hub-row-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; margin-bottom:6px; }
+  .hub-row em{ font-style:normal; color:var(--ink-dim); font-size:11.5px; }
+  .hub-btn{ font-family:var(--font-mono); font-size:10.5px; background:none; border:1px dashed var(--line); border-radius:999px; padding:4px 10px; color:var(--ink-dim); cursor:pointer; margin-left:auto; }
+  .hub-btn:hover{ border-color:var(--accent); color:var(--accent); }
+  .beauty-open-note{ color:var(--ink); }
   .trip-toolkit{ margin-top:4px; }
   .trip-sec-meta{ color:var(--accent); margin-left:4px; }
   .trip-check-row{ display:flex; align-items:center; gap:6px; margin-bottom:4px; }
@@ -1052,6 +1058,7 @@ oat milk" style="width:100%; font-family:var(--font-body); font-size:13px; borde
     </div>
 
     <div class="page" data-page="books" id="page-books">
+      <div id="reading-hub"></div>
       <section class="panel">
         <h2 style="margin-bottom:10px;">Book Log 📚</h2>
         <p class="goals-footnote" style="margin:0 0 14px;">Every book you finish, with your own star rating — pick the stars before you hit Add, or adjust them any time after.</p>
@@ -10094,6 +10101,8 @@ Place this code in the empty space below. */
       ['bookingItems', 'packingList', 'flights', 'spending'].forEach(function (k) { if (!Array.isArray(trv[k])) trv[k] = []; });
       if (!trv.currency || typeof trv.currency !== 'object') trv.currency = { code: '', rate: null };
     });
+    if (!state.readingGoal || typeof state.readingGoal !== 'object') state.readingGoal = { target: 4 };
+    ['currentlyReading', 'toRead', 'bookNotes'].forEach(function (k) { if (!Array.isArray(state[k])) state[k] = []; });
     // Her "usual" starting lists for a new trip — editable via "Save as my usual list" on a trip
     if (!state.tripTemplates || typeof state.tripTemplates !== 'object') state.tripTemplates = {};
     if (!Array.isArray(state.tripTemplates.packingList) || !state.tripTemplates.packingList.length) {
@@ -12324,6 +12333,18 @@ Place this code in the empty space below. */
       if (usedDays === null || usedDays < 0) return 'Finished';
       return 'Lasted ' + usedDays + ' day' + (usedDays === 1 ? '' : 's') + ' — time to consider a new one';
     }
+    function beautyOpenNote(p) {
+      if (!p.openedDate) return '';
+      var open = daysBetween(p.openedDate, todayISO());
+      if (open === null) return '';
+      var txt = open <= 0 ? 'opened today' : 'opened ' + open + ' day' + (open === 1 ? '' : 's') + ' ago';
+      if (p.paoMonths) {
+        var exp = parseLocalISO(p.openedDate); exp.setMonth(exp.getMonth() + Number(p.paoMonths));
+        var left = daysBetween(todayISO(), isoFromDate(exp));
+        txt += left < 0 ? ' · ⚠️ past its use-by (' + (-left) + ' days ago)' : (left <= 30 ? ' · ⚠️ use by ' + exp.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : ' · use by ' + exp.toLocaleDateString(undefined, { month: 'short', year: 'numeric' }));
+      }
+      return txt;
+    }
     function renderBeautyProducts() {
       var el = document.getElementById('beauty-products-list');
       el.innerHTML = state.beautyProducts.length ? state.beautyProducts.map(function (p) {
@@ -12342,6 +12363,11 @@ Place this code in the empty space below. */
           '</div>' +
           '<div class="beauty-product-stars">' + stars + '</div>' +
           '<input type="text" class="beauty-product-comment" placeholder="What do you think of it?" maxlength="140" data-input="beauty-comment" data-id="' + p.id + '" value="' + attr(p.comment || '') + '">' +
+          '<input type="text" class="beauty-product-comment" placeholder="Shade / swatch notes (e.g. 220 Warm Beige, swatched on inner wrist)" maxlength="140" data-input="beauty-shade" data-id="' + p.id + '" value="' + attr(p.shade || '') + '">' +
+          '<div class="trip-currency" style="margin:6px 0;"><span>Opened</span><input type="date" class="trip-amt" style="width:140px;" data-input="beauty-opened" data-id="' + p.id + '" value="' + attr(p.openedDate || '') + '">' +
+          '<span>Use within</span><select data-input="beauty-pao" data-id="' + p.id + '" class="trip-amt" style="width:96px;"><option value="">—</option>' +
+          [3, 6, 9, 12, 18, 24, 36].map(function (m) { return '<option value="' + m + '"' + (Number(p.paoMonths) === m ? ' selected' : '') + '>' + m + ' mo</option>'; }).join('') + '</select>' +
+          '<span class="beauty-open-note">' + escapeHtml(beautyOpenNote(p)) + '</span></div>' +
           '<div class="beauty-product-usage">' +
           '<button type="button" class="beauty-usage-toggle' + (stillUsing ? ' is-using' : ' is-finished') + '" data-action="toggle-beauty-usage" data-id="' + p.id + '" aria-pressed="' + stillUsing + '">' + (stillUsing ? 'Still using' : 'Finished') + '</button>' +
           '<span class="beauty-usage-note">' + escapeHtml(beautyUsageNote(p)) + '</span>' +
@@ -12495,7 +12521,67 @@ Place this code in the empty space below. */
       }
       el.innerHTML = stars;
     }
+    /* ---- reading hub: yearly goal, currently reading (with page progress), to-read list, quotes/notes ---- */
+    function readingPct(r) {
+      var total = Number(r.totalPages) || 0;
+      return total > 0 ? Math.max(0, Math.min(100, Math.round((Number(r.pagesRead) || 0) / total * 100))) : 0;
+    }
+    function hubDelBtn(list, id) { return '<button type="button" class="trip-del" data-action="hub-del" data-list="' + list + '" data-item="' + id + '" aria-label="Delete">×</button>'; }
+    function hubAddForm(kind, fields, btn) {
+      return '<form class="trip-add-form" id="hubadd-' + kind + '" data-hub-form="' + kind + '">' + fields + '<button type="submit">' + btn + '</button></form>';
+    }
+    function readingGoalDone() {
+      var yr = String(new Date().getFullYear());
+      return state.books.filter(function (b) { var mk = bookShelfMonth(b); return mk && mk.slice(0, 4) === yr; }).length;
+    }
+    function readingGoalText(done, tgt) {
+      return '<strong>' + done + '</strong> of ' + (tgt || '?') + ' books' + (tgt && done >= tgt ? ' — goal reached! 🎉' : (tgt ? ' · ' + (tgt - done) + ' to go' : ''));
+    }
+    function renderReadingGoalProgress() {
+      var tgt = Number(state.readingGoal.target) || 0, done = readingGoalDone();
+      var f = document.querySelector('.hub-goal-fill'), tx = document.querySelector('.hub-goal-text');
+      if (f) f.style.width = (tgt > 0 ? Math.min(100, Math.round(done / tgt * 100)) : 0) + '%';
+      if (tx) tx.innerHTML = readingGoalText(done, tgt);
+    }
+    function renderReadingHub() {
+      var el = document.getElementById('reading-hub');
+      if (!el) return;
+      var yr = String(new Date().getFullYear());
+      var done = state.books.filter(function (b) { var mk = bookShelfMonth(b); return mk && mk.slice(0, 4) === yr; }).length;
+      var tgt = Number(state.readingGoal.target) || 0;
+      var gpct = tgt > 0 ? Math.min(100, Math.round(done / tgt * 100)) : 0;
+      var goal = '<section class="panel"><h2 style="font-size:16px;margin-bottom:8px;">🎯 ' + yr + ' Reading Goal</h2>' +
+        '<div class="trip-currency" style="margin-top:0;"><span>My goal:</span><input type="number" min="1" step="1" class="trip-amt" data-input="reading-goal" value="' + attr(tgt || '') + '"><span>books this year</span></div>' +
+        '<div class="progress-bar-track" style="margin:10px 0 6px;"><div class="progress-bar-fill hub-goal-fill" style="width:' + gpct + '%"></div></div>' +
+        '<p class="goals-footnote hub-goal-text" style="margin:0;">' + readingGoalText(done, tgt) + '</p></section>';
+      var cur = '<section class="panel"><h2 style="font-size:16px;margin-bottom:8px;">📖 Currently Reading</h2>' +
+        (state.currentlyReading.map(function (r) {
+          var p = readingPct(r);
+          return '<div class="hub-row" data-hub-row="' + r.id + '"><div class="hub-row-head"><span class="beauty-product-name">' + escapeHtml(r.title) + (r.author ? ' <em>by ' + escapeHtml(r.author) + '</em>' : '') + '</span>' + hubDelBtn('currentlyReading', r.id) + '</div>' +
+            '<div class="progress-bar-track"><div class="progress-bar-fill hub-fill" style="width:' + p + '%"></div></div>' +
+            '<div class="trip-currency" style="margin-top:6px;"><span>Page</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + r.id + '" data-field="pagesRead" value="' + attr(r.pagesRead || 0) + '"><span>of</span><input type="number" min="0" class="trip-amt" data-input="hub-field" data-list="currentlyReading" data-item="' + r.id + '" data-field="totalPages" value="' + attr(r.totalPages || '') + '"><span class="hub-pct">' + p + '%</span>' +
+            '<button type="button" class="hub-btn" data-action="hub-finish" data-item="' + r.id + '">Finished ✓</button></div></div>';
+        }).join('') || '<p class="goals-footnote">Nothing in progress — add what you\'re reading, or start one from your to-read list.</p>') +
+        hubAddForm('reading', '<input type="text" name="title" placeholder="Book title" maxlength="80"><input type="text" name="author" placeholder="Author" maxlength="60"><input type="number" name="pages" min="1" placeholder="Total pages" class="trip-amt" style="width:110px;">', 'Add') + '</section>';
+      var toread = '<section class="panel"><h2 style="font-size:16px;margin-bottom:8px;">🔖 To-Read List</h2>' +
+        (state.toRead.map(function (r) {
+          return '<div class="trip-check-row"><span class="beauty-product-name" style="flex:1;">' + escapeHtml(r.title) + (r.author ? ' <em>by ' + escapeHtml(r.author) + '</em>' : '') + '</span>' +
+            '<button type="button" class="hub-btn" data-action="hub-start" data-item="' + r.id + '">Start reading</button>' + hubDelBtn('toRead', r.id) + '</div>';
+        }).join('') || '<p class="goals-footnote">Nothing on your list yet.</p>') +
+        hubAddForm('toread', '<input type="text" name="title" placeholder="Book title" maxlength="80"><input type="text" name="author" placeholder="Author" maxlength="60">', 'Add') + '</section>';
+      var titles = {};
+      state.books.concat(state.currentlyReading, state.toRead).forEach(function (b) { if (b.title) titles[b.title] = 1; });
+      var notes = '<section class="panel"><h2 style="font-size:16px;margin-bottom:8px;">💬 Quotes &amp; Notes</h2>' +
+        '<datalist id="hub-book-titles">' + Object.keys(titles).map(function (n) { return '<option value="' + attr(n) + '">'; }).join('') + '</datalist>' +
+        hubAddForm('note', '<input type="text" name="book" list="hub-book-titles" placeholder="Which book?" maxlength="80"><select name="kind"><option value="quote">💬 Quote</option><option value="note">📝 Note</option></select><textarea name="text" rows="2" placeholder="Favorite line or your thoughts…" maxlength="600" style="flex:1 1 100%;font-size:12.5px;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;color:var(--ink);"></textarea>', 'Save') +
+        state.bookNotes.slice().reverse().map(function (n) {
+          return '<div class="hub-row"><div class="hub-row-head"><span class="beauty-product-name">' + (n.kind === 'note' ? '📝 ' : '💬 ') + escapeHtml(n.book || 'Untitled') + ' <em>' + escapeHtml(n.date || '') + '</em></span>' + hubDelBtn('bookNotes', n.id) + '</div>' +
+            '<textarea rows="2" class="travel-itinerary-summary" data-input="hub-field" data-list="bookNotes" data-item="' + n.id + '" data-field="text">' + escapeHtml(n.text || '') + '</textarea></div>';
+        }).join('') + '</section>';
+      el.innerHTML = goal + cur + toread + notes;
+    }
     function renderBooks() {
+      renderReadingHub();
       var el = document.getElementById('books-list');
       if (!el) return;
       el.innerHTML = state.books.length ? state.books.slice().reverse().map(function (b) {
@@ -13615,6 +13701,30 @@ Place this code in the empty space below. */
         var trv = state.travel.find(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (trv) { trv.status = btn.getAttribute('data-status'); renderTravel(); scheduleSave(); }
 
+      } else if (action === 'hub-del') {
+        var hdList = state[btn.getAttribute('data-list')];
+        if (Array.isArray(hdList)) {
+          var hdIdx = hdList.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
+          if (hdIdx > -1) { hdList.splice(hdIdx, 1); renderReadingHub(); scheduleSave(); }
+        }
+
+      } else if (action === 'hub-finish') {
+        var hfIdx = state.currentlyReading.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
+        if (hfIdx > -1) {
+          var hf = state.currentlyReading.splice(hfIdx, 1)[0];
+          state.books.push({ id: uid('bk'), title: hf.title, author: hf.author || '', genre: '', usState: '', country: '', monthRead: todayISO().slice(0, 7), synopsis: '', coverId: null, rating: 0, dateAdded: todayISO() });
+          renderAll(); scheduleSave();
+          showToast('Nice — added to your Book Log. Give it some stars!');
+        }
+
+      } else if (action === 'hub-start') {
+        var hsIdx = state.toRead.findIndex(function (x) { return x.id === btn.getAttribute('data-item'); });
+        if (hsIdx > -1) {
+          var hs = state.toRead.splice(hsIdx, 1)[0];
+          state.currentlyReading.push({ id: uid('cr'), title: hs.title, author: hs.author || '', totalPages: 0, pagesRead: 0, started: todayISO() });
+          renderReadingHub(); scheduleSave();
+        }
+
       } else if (action === 'remove-travel') {
         var trvIdx = state.travel.findIndex(function (x) { return x.id === btn.getAttribute('data-id'); });
         if (trvIdx > -1) { state.travel.splice(trvIdx, 1); renderTravel(); scheduleSave(); }
@@ -13976,6 +14086,34 @@ Place this code in the empty space below. */
           scheduleSaveDebounced();
         }
 
+      } else if (kind === 'reading-goal') {
+        state.readingGoal.target = Math.max(0, Number(t.value) || 0);
+        scheduleSaveDebounced(); renderReadingGoalProgress();
+
+      } else if (kind === 'hub-field') {
+        var hfList = state[t.getAttribute('data-list')];
+        var hfItem = Array.isArray(hfList) && hfList.find(function (x) { return x.id === t.getAttribute('data-item'); });
+        if (hfItem) {
+          var hfField = t.getAttribute('data-field');
+          hfItem[hfField] = (hfField === 'pagesRead' || hfField === 'totalPages') ? (Number(t.value) || 0) : t.value;
+          if (hfField === 'pagesRead' || hfField === 'totalPages') {
+            var hRow = t.closest('.hub-row'), hp = readingPct(hfItem);
+            if (hRow) { hRow.querySelector('.hub-fill').style.width = hp + '%'; hRow.querySelector('.hub-pct').textContent = hp + '%'; }
+          }
+          scheduleSaveDebounced();
+        }
+
+      } else if (kind === 'beauty-opened' || kind === 'beauty-pao' || kind === 'beauty-shade') {
+        var bpx = state.beautyProducts.find(function (x) { return x.id === t.getAttribute('data-id'); });
+        if (bpx) {
+          if (kind === 'beauty-shade') { bpx.shade = t.value; }
+          else {
+            if (kind === 'beauty-opened') bpx.openedDate = t.value || null; else bpx.paoMonths = t.value ? Number(t.value) : null;
+            renderBeautyProducts();
+          }
+          scheduleSaveDebounced();
+        }
+
       } else if (kind === 'beauty-comment') {
         var bpNote = state.beautyProducts.find(function (x) { return x.id === t.getAttribute('data-id'); });
         if (bpNote) { bpNote.comment = t.value; scheduleSaveDebounced(); }
@@ -14100,6 +14238,18 @@ Place this code in the empty space below. */
     }, true);
     document.body.addEventListener('submit', function (e) {
       var form = e.target;
+      if (form && form.hasAttribute && form.hasAttribute('data-hub-form')) {
+        e.preventDefault();
+        var hk = form.getAttribute('data-hub-form');
+        var hEl = form.elements;
+        var hTitle = hEl.title ? hEl.title.value.trim() : '';
+        if (hk === 'reading' && hTitle) state.currentlyReading.push({ id: uid('cr'), title: hTitle, author: hEl.author.value.trim(), totalPages: Number(hEl.pages.value) || 0, pagesRead: 0, started: todayISO() });
+        else if (hk === 'toread' && hTitle) state.toRead.push({ id: uid('tr'), title: hTitle, author: hEl.author.value.trim() });
+        else if (hk === 'note' && hEl.text.value.trim()) state.bookNotes.push({ id: uid('bn'), book: hEl.book.value.trim(), kind: hEl.kind.value, text: hEl.text.value.trim(), date: todayISO() });
+        else return;
+        renderReadingHub(); scheduleSave();
+        return;
+      }
       if (form && form.hasAttribute && form.hasAttribute('data-trip-form')) {
         e.preventDefault();
         var tfTrip = state.travel.find(function (x) { return x.id === form.getAttribute('data-id'); });
